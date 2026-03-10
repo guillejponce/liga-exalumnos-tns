@@ -125,7 +125,7 @@ export interface MatchWithTeams extends Match {
 }
 
 export interface StandingRow {
-  team: Team
+  team: Pick<Team, 'id' | 'name' | 'short_name' | 'crest_path'>
   played: number
   won: number
   drawn: number

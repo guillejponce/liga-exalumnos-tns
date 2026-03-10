@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import TeamCrest from '@/components/public/TeamCrest'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -41,9 +42,7 @@ export default async function TeamDetailPage({ params }: Props) {
       </Link>
 
       <div className="mt-6 flex items-center gap-5">
-        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-navy-800 text-2xl font-bold text-navy-400">
-          {team.short_name.slice(0, 3)}
-        </div>
+        <TeamCrest crestPath={team.crest_path} name={team.short_name} size={80} className="rounded-2xl" />
         <div>
           <h1 className="text-3xl font-bold text-white">{team.name}</h1>
           <p className="text-sm text-navy-400">{team.short_name}</p>

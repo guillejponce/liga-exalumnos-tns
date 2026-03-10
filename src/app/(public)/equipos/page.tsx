@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { getLeague } from '@/lib/league'
 import Link from 'next/link'
+import TeamCrest from '@/components/public/TeamCrest'
 
 export const metadata: Metadata = { title: 'Equipos' }
 
@@ -35,9 +36,7 @@ export default async function EquiposPage() {
               href={`/equipos/${team.id}`}
               className="group flex items-center gap-4 rounded-xl border border-navy-800 bg-navy-900 p-6 transition-colors hover:border-league-green/30"
             >
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-navy-800 text-lg font-bold text-navy-400 transition-colors group-hover:bg-navy-700 group-hover:text-league-green">
-                {team.short_name.slice(0, 2)}
-              </div>
+              <TeamCrest crestPath={team.crest_path} name={team.short_name} size={56} className="rounded-xl" />
               <div>
                 <h3 className="font-semibold text-white">{team.name}</h3>
                 <p className="text-sm text-navy-400">

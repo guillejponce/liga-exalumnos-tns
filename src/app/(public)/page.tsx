@@ -1,15 +1,34 @@
 import { createClient } from '@/lib/supabase/server'
 import { getLeague, getActiveSeasonForLeague } from '@/lib/league'
 import Link from 'next/link'
+import TeamCrest from '@/components/public/TeamCrest'
+
+interface TeamInfo {
+  name: string
+  short_name: string
+  crest_path: string | null
+}
+
+interface MatchDisplay {
+  id: string
+  round: number | null
+  kickoff_at: string | null
+  status: string
+  home_score: number | null
+  away_score: number | null
+  home_team: TeamInfo
+  away_team: TeamInfo
+}
 
 export default async function HomePage() {
   const supabase = await createClient()
   const league = await getLeague()
 
-  let upcomingMatches: MatchDisplay[] = []
+  let recentMatches: MatchDisplay[] = []
   let teamCount = 0
   let playerCount = 0
   let playedCount = 0
+  let goalCount = 0
 
   if (league) {
     const [{ count: tc }, { count: pc }] = await Promise.all([
@@ -30,16 +49,16 @@ export default async function HomePage() {
       if (stages && stages.length > 0) {
         const stageIds = stages.map((s) => s.id)
 
-        const [{ data: upcoming }, { count: played }] = await Promise.all([
+        const [{ data: matchesRaw }, { count: played }] = await Promise.all([
           supabase
             .from('matches')
             .select(`
               id, round, kickoff_at, status, home_score, away_score,
-              home_team_season:team_season!matches_home_team_season_id_fkey(team:teams(name, short_name)),
-              away_team_season:team_season!matches_away_team_season_id_fkey(team:teams(name, short_name))
+              home_team_season:team_season!matches_home_team_season_id_fkey(team:teams(name, short_name, crest_path)),
+              away_team_season:team_season!matches_away_team_season_id_fkey(team:teams(name, short_name, crest_path))
             `)
             .in('stage_id', stageIds)
-            .order('kickoff_at', { ascending: true })
+            .order('kickoff_at', { ascending: false, nullsFirst: false })
             .limit(6),
           supabase
             .from('matches')
@@ -48,8 +67,34 @@ export default async function HomePage() {
             .eq('status', 'played'),
         ])
 
-        upcomingMatches = (upcoming as unknown as MatchDisplay[]) ?? []
         playedCount = played ?? 0
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        recentMatches = (matchesRaw ?? []).map((m: any) => {
+          const ht = Array.isArray(m.home_team_season?.team) ? m.home_team_season.team[0] : m.home_team_season?.team
+          const at = Array.isArray(m.away_team_season?.team) ? m.away_team_season.team[0] : m.away_team_season?.team
+          return {
+            id: m.id,
+            round: m.round,
+            kickoff_at: m.kickoff_at,
+            status: m.status,
+            home_score: m.home_score,
+            away_score: m.away_score,
+            home_team: ht ?? { name: '?', short_name: '?', crest_path: null },
+            away_team: at ?? { name: '?', short_name: '?', crest_path: null },
+          }
+        })
+
+        // Count total goals from played matches
+        const { data: playedMatches } = await supabase
+          .from('matches')
+          .select('home_score, away_score')
+          .in('stage_id', stageIds)
+          .eq('status', 'played')
+
+        if (playedMatches) {
+          goalCount = playedMatches.reduce((sum, m) => sum + (m.home_score ?? 0) + (m.away_score ?? 0), 0)
+        }
       }
     }
   }
@@ -79,9 +124,9 @@ export default async function HomePage() {
             <Link href="/fixture" className="text-sm text-league-green hover:underline">Ver fixture completo</Link>
           </div>
 
-          {upcomingMatches.length > 0 ? (
+          {recentMatches.length > 0 ? (
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {upcomingMatches.map((match) => (
+              {recentMatches.map((match) => (
                 <MatchCard key={match.id} match={match} />
               ))}
             </div>
@@ -97,32 +142,21 @@ export default async function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
-              { label: 'Equipos', value: teamCount },
-              { label: 'Jugadores', value: playerCount },
-              { label: 'Partidos jugados', value: playedCount },
-              { label: 'Goles', value: '—' },
+              { label: 'Equipos', value: teamCount, href: '/equipos' },
+              { label: 'Jugadores', value: playerCount, href: '/equipos' },
+              { label: 'Partidos jugados', value: playedCount, href: '/fixture' },
+              { label: 'Goles', value: goalCount, href: '/goleadores' },
             ].map((stat) => (
-              <div key={stat.label} className="rounded-xl border border-navy-800 bg-navy-900 p-6 text-center">
+              <Link key={stat.label} href={stat.href} className="rounded-xl border border-navy-800 bg-navy-900 p-6 text-center transition-colors hover:border-league-green/30">
                 <p className="text-3xl font-bold text-league-green">{stat.value}</p>
                 <p className="mt-1 text-sm text-navy-400">{stat.label}</p>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
       </section>
     </div>
   )
-}
-
-interface MatchDisplay {
-  id: string
-  round: number | null
-  kickoff_at: string | null
-  status: string
-  home_score: number | null
-  away_score: number | null
-  home_team_season: { team: { name: string; short_name: string } }
-  away_team_season: { team: { name: string; short_name: string } }
 }
 
 function MatchCard({ match }: { match: MatchDisplay }) {
@@ -141,8 +175,10 @@ function MatchCard({ match }: { match: MatchDisplay }) {
       </div>
       <div className="flex items-center justify-between">
         <div className="flex-1 text-center">
-          <div className="mx-auto h-10 w-10 rounded-full bg-navy-700" />
-          <p className="mt-2 text-xs font-medium text-navy-200">{match.home_team_season.team.short_name}</p>
+          <div className="mx-auto w-fit">
+            <TeamCrest crestPath={match.home_team.crest_path} name={match.home_team.short_name} size={40} />
+          </div>
+          <p className="mt-2 text-xs font-medium text-navy-200">{match.home_team.short_name}</p>
         </div>
         <div className="px-3 text-center">
           {isPlayed ? (
@@ -152,8 +188,10 @@ function MatchCard({ match }: { match: MatchDisplay }) {
           )}
         </div>
         <div className="flex-1 text-center">
-          <div className="mx-auto h-10 w-10 rounded-full bg-navy-700" />
-          <p className="mt-2 text-xs font-medium text-navy-200">{match.away_team_season.team.short_name}</p>
+          <div className="mx-auto w-fit">
+            <TeamCrest crestPath={match.away_team.crest_path} name={match.away_team.short_name} size={40} />
+          </div>
+          <p className="mt-2 text-xs font-medium text-navy-200">{match.away_team.short_name}</p>
         </div>
       </div>
     </div>

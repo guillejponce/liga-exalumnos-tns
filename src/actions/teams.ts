@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+const BUCKET = 'public_liga'
+
 function revalidateTeams() {
   revalidatePath('/admin/equipos')
   revalidatePath('/equipos')
@@ -71,12 +73,12 @@ export async function deleteTeam(teamId: string) {
 
   // Remove crest files from storage
   const { data: files } = await supabase.storage
-    .from('public')
+    .from(BUCKET)
     .list(`teams/${teamId}`)
 
   if (files && files.length > 0) {
     await supabase.storage
-      .from('public')
+      .from(BUCKET)
       .remove(files.map((f) => `teams/${teamId}/${f.name}`))
   }
 
@@ -96,18 +98,28 @@ async function uploadCrest(
   const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
   const storagePath = `teams/${teamId}/crest.${ext}`
 
-  const { error: uploadError } = await supabase.storage
-    .from('public')
+  console.log('[crest upload] bucket:', BUCKET, 'path:', storagePath, 'file:', file.name, 'size:', file.size, 'type:', file.type)
+
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from(BUCKET)
     .upload(storagePath, file, { upsert: true, contentType: file.type })
 
-  if (uploadError) return { error: `Error subiendo logo: ${uploadError.message}` }
+  if (uploadError) {
+    console.error('[crest upload] error:', uploadError.message, 'code:', uploadError)
+    return { error: `Error subiendo logo: ${uploadError.message}` }
+  }
+  console.log('[crest upload] ok:', uploadData?.path)
 
   const { error: updateError } = await supabase
     .from('teams')
     .update({ crest_path: storagePath })
     .eq('id', teamId)
 
-  if (updateError) return { error: `Error guardando ruta: ${updateError.message}` }
+  if (updateError) {
+    console.error('[crest db update] error:', updateError.message)
+    return { error: `Error guardando ruta: ${updateError.message}` }
+  }
+  console.log('[crest db update] ok, crest_path=', storagePath)
 
   return { success: true }
 }
@@ -122,7 +134,7 @@ export async function removeCrest(teamId: string) {
     .single()
 
   if (team?.crest_path) {
-    await supabase.storage.from('public').remove([team.crest_path])
+    await supabase.storage.from(BUCKET).remove([team.crest_path])
   }
 
   const { error } = await supabase
