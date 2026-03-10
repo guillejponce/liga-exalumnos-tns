@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getLeague } from '@/lib/league'
 import PlayersManager from './PlayersManager'
 
@@ -15,7 +15,7 @@ export default async function JugadoresAdminPage() {
     )
   }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const [{ data: players }, { data: teams }] = await Promise.all([
     supabase

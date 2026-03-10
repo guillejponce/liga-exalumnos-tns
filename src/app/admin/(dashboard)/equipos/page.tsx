@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getLeague } from '@/lib/league'
 import TeamsManager from './TeamsManager'
 
@@ -15,7 +15,7 @@ export default async function EquiposAdminPage() {
     )
   }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { data: teams } = await supabase
     .from('teams')
     .select('*, team_players(count)')

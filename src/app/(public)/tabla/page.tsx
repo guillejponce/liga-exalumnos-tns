@@ -18,7 +18,7 @@ export default async function TablaPage() {
       const supabase = await createClient()
 
       const { data: teamSeasons } = await supabase
-        .from('team_seasons')
+        .from('team_season')
         .select('id, team:teams(*)')
         .eq('season_id', activeSeason.id)
 

@@ -35,8 +35,8 @@ export default async function FixturePage() {
           .from('matches')
           .select(`
             id, round, kickoff_at, status, home_score, away_score,
-            home_team_season:team_seasons!matches_home_team_season_id_fkey(team:teams(name, short_name)),
-            away_team_season:team_seasons!matches_away_team_season_id_fkey(team:teams(name, short_name))
+            home_team_season:team_season!matches_home_team_season_id_fkey(team:teams(name, short_name)),
+            away_team_season:team_season!matches_away_team_season_id_fkey(team:teams(name, short_name))
           `)
           .in('stage_id', stages.map((s) => s.id))
           .order('round')

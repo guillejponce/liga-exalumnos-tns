@@ -20,7 +20,7 @@ interface StageRow {
   id: string
   name: string
   type: string
-  order: number
+  stage_order: number
   stage_groups: { id: string; name: string }[]
 }
 
@@ -141,7 +141,7 @@ export default function MatchesManager({ seasonId, competitions, teamSeasons, ma
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600">Orden</label>
-                  <input name="order" type="number" defaultValue={1} min={1} className="mt-1 w-16 rounded-lg border border-gray-300 px-3 py-1.5 text-sm" />
+                  <input name="stage_order" type="number" defaultValue={1} min={1} className="mt-1 w-16 rounded-lg border border-gray-300 px-3 py-1.5 text-sm" />
                 </div>
                 <button type="submit" className="rounded-lg bg-navy-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-navy-800">
                   Crear etapa
@@ -157,7 +157,7 @@ export default function MatchesManager({ seasonId, competitions, teamSeasons, ma
           )}
 
           {comp.stages
-            .sort((a, b) => a.order - b.order)
+            .sort((a, b) => a.stage_order - b.stage_order)
             .map((stage) => {
               const stageMatches = matches.filter((m) => m.stage_id === stage.id)
               return (

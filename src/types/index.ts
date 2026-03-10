@@ -79,8 +79,8 @@ export interface Stage {
   competition_id: string
   name: string
   type: StageType
-  order: number
-  rules: Record<string, unknown> | null
+  stage_order: number
+  rules: Record<string, unknown>
   created_at: string
 }
 

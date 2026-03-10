@@ -1,36 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
-
-export async function getSeasons(leagueId: string) {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('seasons')
-    .select('*')
-    .eq('league_id', leagueId)
-    .order('year', { ascending: false })
-    .order('semester', { ascending: false })
-
-  if (error) throw error
-  return data
-}
-
-export async function getActiveSeason(leagueId: string) {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('seasons')
-    .select('*')
-    .eq('league_id', leagueId)
-    .eq('is_active', true)
-    .single()
-
-  if (error && error.code !== 'PGRST116') throw error
-  return data
-}
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function createSeason(formData: FormData) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const league_id = formData.get('league_id') as string
   const name = formData.get('name') as string
@@ -69,7 +43,7 @@ export async function createSeason(formData: FormData) {
 }
 
 export async function setActiveSeason(seasonId: string, leagueId: string) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   await supabase
     .from('seasons')
@@ -89,7 +63,7 @@ export async function setActiveSeason(seasonId: string, leagueId: string) {
 }
 
 export async function deleteSeason(seasonId: string) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase.from('seasons').delete().eq('id', seasonId)
 
   if (error) return { error: error.message }
@@ -98,19 +72,8 @@ export async function deleteSeason(seasonId: string) {
   return { success: true }
 }
 
-export async function getTeamSeasons(seasonId: string) {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('team_seasons')
-    .select('*, team:teams(*)')
-    .eq('season_id', seasonId)
-
-  if (error) throw error
-  return data
-}
-
 export async function registerTeamToSeason(formData: FormData) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const team_id = formData.get('team_id') as string
   const season_id = formData.get('season_id') as string
@@ -120,7 +83,7 @@ export async function registerTeamToSeason(formData: FormData) {
   }
 
   const { error } = await supabase
-    .from('team_seasons')
+    .from('team_season')
     .insert({ team_id, season_id })
 
   if (error) {
@@ -135,8 +98,8 @@ export async function registerTeamToSeason(formData: FormData) {
 }
 
 export async function removeTeamFromSeason(teamSeasonId: string) {
-  const supabase = await createClient()
-  const { error } = await supabase.from('team_seasons').delete().eq('id', teamSeasonId)
+  const supabase = createAdminClient()
+  const { error } = await supabase.from('team_season').delete().eq('id', teamSeasonId)
 
   if (error) return { error: error.message }
 

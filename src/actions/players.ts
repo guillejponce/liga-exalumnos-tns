@@ -1,22 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
-
-export async function getPlayers(leagueId: string) {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('players')
-    .select('*, team_players(team_id, shirt_number, is_captain, team:teams(name, short_name))')
-    .eq('league_id', leagueId)
-    .order('first_name')
-
-  if (error) throw error
-  return data
-}
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function createPlayer(formData: FormData) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const first_name = formData.get('first_name') as string
   const last_name = (formData.get('last_name') as string) || null
@@ -63,7 +51,7 @@ export async function createPlayer(formData: FormData) {
 }
 
 export async function updatePlayer(formData: FormData) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const id = formData.get('id') as string
   const first_name = formData.get('first_name') as string
@@ -87,7 +75,7 @@ export async function updatePlayer(formData: FormData) {
 }
 
 export async function deletePlayer(playerId: string) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   await supabase.from('team_players').delete().eq('player_id', playerId)
   const { error } = await supabase.from('players').delete().eq('id', playerId)
@@ -100,7 +88,7 @@ export async function deletePlayer(playerId: string) {
 }
 
 export async function assignPlayerToTeam(formData: FormData) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const player_id = formData.get('player_id') as string
   const team_id = formData.get('team_id') as string

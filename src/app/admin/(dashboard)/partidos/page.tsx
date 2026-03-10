@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getLeague, getActiveSeasonForLeague } from '@/lib/league'
 import MatchesManager from './MatchesManager'
 
@@ -29,32 +29,65 @@ export default async function PartidosAdminPage() {
     )
   }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
-  const [{ data: competitions }, { data: teamSeasons }] = await Promise.all([
+  const [competitionsRes, { data: teamSeasons }] = await Promise.all([
     supabase
       .from('competitions')
-      .select('*, stages(*, stage_groups(*))')
+      .select('*, stages(*)')
       .eq('season_id', activeSeason.id)
       .order('created_at'),
     supabase
-      .from('team_seasons')
+      .from('team_season')
       .select('*, team:teams(*)')
       .eq('season_id', activeSeason.id),
   ])
 
-  const stageIds = (competitions ?? []).flatMap((c) =>
+  const competitions = competitionsRes.data ?? []
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const stageIds = competitions.flatMap((c: any) =>
     (c.stages ?? []).map((s: { id: string }) => s.id)
   )
 
-  let matches: Record<string, unknown>[] = []
+  // Try to fetch stage_groups separately
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let stageGroupsMap: Record<string, any[]> = {}
+  if (stageIds.length > 0) {
+    const sgRes = await supabase
+      .from('stage_groups')
+      .select('*')
+      .in('stage_id', stageIds)
+
+    if (!sgRes.error && sgRes.data) {
+      for (const g of sgRes.data) {
+        const sid = g.stage_id as string
+        if (!stageGroupsMap[sid]) stageGroupsMap[sid] = []
+        stageGroupsMap[sid].push(g)
+      }
+    }
+  }
+
+  // Merge stage_groups into stages
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const competitionsWithGroups = competitions.map((c: any) => ({
+    ...c,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    stages: (c.stages ?? []).map((st: any) => ({
+      ...st,
+      stage_groups: stageGroupsMap[st.id] ?? [],
+    })),
+  }))
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let matches: any[] = []
   if (stageIds.length > 0) {
     const { data } = await supabase
       .from('matches')
       .select(`
         *,
-        home_team_season:team_seasons!matches_home_team_season_id_fkey(*, team:teams(*)),
-        away_team_season:team_seasons!matches_away_team_season_id_fkey(*, team:teams(*))
+        home_team_season:team_season!matches_home_team_season_id_fkey(*, team:teams(*)),
+        away_team_season:team_season!matches_away_team_season_id_fkey(*, team:teams(*))
       `)
       .in('stage_id', stageIds)
       .order('round')
@@ -73,7 +106,7 @@ export default async function PartidosAdminPage() {
       </div>
       <MatchesManager
         seasonId={activeSeason.id}
-        competitions={competitions ?? []}
+        competitions={competitionsWithGroups}
         teamSeasons={teamSeasons ?? []}
         matches={matches}
       />

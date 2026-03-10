@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getLeague, getActiveSeasonForLeague } from '@/lib/league'
 
 export default async function AdminDashboard() {
@@ -9,7 +9,7 @@ export default async function AdminDashboard() {
   let seasonName = 'Sin temporada activa'
 
   if (league) {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     const [{ count: tc }, { count: pc }] = await Promise.all([
       supabase.from('teams').select('*', { count: 'exact', head: true }).eq('league_id', league.id),
