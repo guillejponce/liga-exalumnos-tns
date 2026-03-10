@@ -464,7 +464,7 @@ function CompetitionsTab({
 
               {sortedStages.length === 0 && !isAddingStage && (
                 <div className="border-t border-gray-100 px-4 py-4 text-center text-xs text-gray-400">
-                  Sin etapas — agregá una etapa para definir el formato
+                  Sin etapas — agrega una etapa para definir el formato
                 </div>
               )}
 

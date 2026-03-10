@@ -18,6 +18,10 @@ export const metadata: Metadata = {
     template: '%s | Liga Nico Sabag',
   },
   description: 'Liga de fútbol de exalumnos Newland — Temporadas, equipos, fixture y tabla de posiciones.',
+  icons: {
+    icon: '/assets/Ligas Newland blanco.png',
+    apple: '/assets/Ligas Newland blanco.png',
+  },
 }
 
 export default function RootLayout({

@@ -214,7 +214,7 @@ export default async function TablaPage() {
                       <td className="px-4 py-3 text-center text-sm font-bold text-navy-300">{index + 1}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
-                          <TeamCrest crestPath={row.team.crest_path} name={row.team.short_name} size={24} />
+                          <TeamCrest crestPath={row.team.crest_path} name={row.team.short_name} size={64} />
                           <span className="text-sm font-medium text-white">{row.team.name}</span>
                         </div>
                       </td>

@@ -145,7 +145,7 @@ export default async function GoleadoresPage() {
                 <td className="px-4 py-3 text-sm font-medium text-white">{scorer.playerName}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <TeamCrest crestPath={scorer.crestPath} name={scorer.teamShortName} size={20} />
+                    <TeamCrest crestPath={scorer.crestPath} name={scorer.teamShortName} size={28} />
                     <span className="text-sm text-navy-300">{scorer.teamShortName}</span>
                   </div>
                 </td>

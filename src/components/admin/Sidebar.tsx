@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 
 const ADMIN_LINKS = [
@@ -17,9 +18,13 @@ export default function Sidebar() {
   return (
     <aside className="hidden h-full w-64 flex-col border-r border-navy-700 bg-navy-900 md:flex">
       <div className="flex h-16 items-center gap-3 border-b border-navy-700 px-6">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-league-green">
-          <span className="text-xs font-bold text-white">NS</span>
-        </div>
+        <Image
+          src="/assets/LNS blanco.png"
+          alt="Liga Nico Sabag"
+          width={64}
+          height={64}
+          className="h-8 w-auto"
+        />
         <span className="text-sm font-bold text-white">Admin Panel</span>
       </div>
 
@@ -71,9 +76,13 @@ export function MobileSidebar({ open, onClose }: { open: boolean; onClose: () =>
       <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-navy-900">
         <div className="flex h-16 items-center justify-between border-b border-navy-700 px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-league-green">
-              <span className="text-xs font-bold text-white">NS</span>
-            </div>
+            <Image
+              src="/assets/LNS blanco.png"
+              alt="Liga Nico Sabag"
+              width={32}
+              height={32}
+              className="h-8 w-auto"
+            />
             <span className="text-sm font-bold text-white">Admin</span>
           </div>
           <button onClick={onClose} className="text-navy-400 hover:text-white">

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { loginWithPassword, loginWithOtp } from '@/actions/auth'
 
 type AuthMode = 'password' | 'magic-link'
@@ -38,12 +39,16 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-navy-950 px-4">
       <div className="w-full max-w-sm">
         <div className="text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-league-green">
-            <span className="text-lg font-bold text-white">NS</span>
-          </div>
+          <Image
+            src="/assets/Ligas Newland blanco.png"
+            alt="Liga Nico Sabag"
+            width={200}
+            height={60}
+            className="mx-auto h-14 w-auto"
+          />
           <h1 className="mt-4 text-xl font-bold text-white">Admin — Liga Nico Sabag</h1>
           <p className="mt-1 text-sm text-navy-400">
-            Ingresá con tu cuenta autorizada
+            Ingresa con tu cuenta autorizada
           </p>
         </div>
 
@@ -52,7 +57,7 @@ export default function LoginPage() {
             <svg className="mx-auto h-10 w-10 text-league-green" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
             </svg>
-            <p className="mt-3 text-sm font-medium text-white">Revisá tu email</p>
+            <p className="mt-3 text-sm font-medium text-white">Revisa tu correo</p>
             <p className="mt-1 text-xs text-navy-400">Te enviamos un enlace mágico para iniciar sesión.</p>
             <button
               onClick={() => { setMagicSent(false); setMode('password') }}

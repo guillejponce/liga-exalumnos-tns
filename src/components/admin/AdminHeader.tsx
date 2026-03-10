@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { logout } from '@/actions/auth'
 import { MobileSidebar } from './Sidebar'
 
@@ -20,9 +21,18 @@ export default function AdminHeader() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
           </button>
-          <h2 className="text-sm font-medium text-gray-500">
-            Liga Nico Sabag — Panel de Administración
-          </h2>
+          <div className="flex items-center gap-3">
+            <Image
+              src="/assets/LNS negro.png"
+              alt="Liga Nico Sabag"
+              width={28}
+              height={28}
+              className="h-7 w-auto md:hidden"
+            />
+            <h2 className="text-sm font-medium text-gray-500">
+              Liga Nico Sabag — Panel de Administración
+            </h2>
+          </div>
         </div>
 
         <form action={logout}>

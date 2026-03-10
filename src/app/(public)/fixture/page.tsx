@@ -221,7 +221,7 @@ function MatchRow({ match }: { match: MatchDisplay }) {
     <div className="flex items-center justify-between rounded-xl border border-navy-800 bg-navy-900 px-4 py-3 sm:px-6">
       <div className="flex flex-1 items-center justify-end gap-2 sm:gap-3">
         <span className="text-right text-sm font-medium text-white">{match.home_team.short_name}</span>
-        <TeamCrest crestPath={match.home_team.crest_path} name={match.home_team.short_name} size={28} />
+        <TeamCrest crestPath={match.home_team.crest_path} name={match.home_team.short_name} size={40} />
       </div>
 
       <div className="mx-3 flex flex-col items-center sm:mx-6">
@@ -238,7 +238,7 @@ function MatchRow({ match }: { match: MatchDisplay }) {
       </div>
 
       <div className="flex flex-1 items-center gap-2 sm:gap-3">
-        <TeamCrest crestPath={match.away_team.crest_path} name={match.away_team.short_name} size={28} />
+        <TeamCrest crestPath={match.away_team.crest_path} name={match.away_team.short_name} size={40} />
         <span className="text-sm font-medium text-white">{match.away_team.short_name}</span>
       </div>
     </div>

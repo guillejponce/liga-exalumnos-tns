@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 
 const NAV_LINKS = [
@@ -21,12 +22,13 @@ export default function Navbar() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-3" onClick={() => setMobileOpen(false)}>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-league-green">
-              <span className="text-sm font-bold text-white">NS</span>
-            </div>
-            <span className="text-lg font-bold text-white">
-              Liga Nico Sabag
-            </span>
+            <Image
+              src="/assets/Ligas Newland blanco.png"
+              alt="Liga Nico Sabag"
+              width={160}
+              height={40}
+              className="h-48 w-auto"
+            />
           </Link>
 
           <nav className="hidden items-center gap-1 sm:flex">

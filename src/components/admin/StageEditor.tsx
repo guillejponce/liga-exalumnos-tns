@@ -139,7 +139,7 @@ function LeagueTableEditor({
     if (selectedTeams.length < 2) { onError('Seleccioná al menos 2 equipos'); return }
 
     if (matches.length > 0) {
-      if (!confirm(`Ya hay ${matches.length} partidos en esta etapa. ¿Querés borrarlos y generar de nuevo?`)) return
+      if (!confirm(`Ya hay ${matches.length} partidos en esta etapa. ¿Quieres borrarlos y generar de nuevo?`)) return
       const del = await deleteAllStageMatches(stage.id)
       if (del.error) { onError(del.error); return }
     }

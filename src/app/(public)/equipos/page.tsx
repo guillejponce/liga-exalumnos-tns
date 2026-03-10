@@ -36,7 +36,7 @@ export default async function EquiposPage() {
               href={`/equipos/${team.id}`}
               className="group flex items-center gap-4 rounded-xl border border-navy-800 bg-navy-900 p-6 transition-colors hover:border-league-green/30"
             >
-              <TeamCrest crestPath={team.crest_path} name={team.short_name} size={56} className="rounded-xl" />
+              <TeamCrest crestPath={team.crest_path} name={team.short_name} size={72} className="rounded-xl" />
               <div>
                 <h3 className="font-semibold text-white">{team.name}</h3>
                 <p className="text-sm text-navy-400">

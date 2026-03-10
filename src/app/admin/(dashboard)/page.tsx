@@ -69,7 +69,7 @@ export default async function AdminDashboard() {
         <div className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-6">
           <h2 className="text-lg font-semibold text-amber-800">Configuración inicial</h2>
           <p className="mt-2 text-sm text-amber-700">
-            Para empezar, necesitás crear una liga en Supabase. Insertá un registro en la tabla <code className="rounded bg-amber-100 px-1">leagues</code> con nombre y slug.
+            Para empezar, necesitas crear una liga en Supabase. Inserta un registro en la tabla <code className="rounded bg-amber-100 px-1">leagues</code> con nombre y slug.
           </p>
         </div>
       )}

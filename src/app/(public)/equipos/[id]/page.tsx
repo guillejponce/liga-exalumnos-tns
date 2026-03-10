@@ -42,7 +42,7 @@ export default async function TeamDetailPage({ params }: Props) {
       </Link>
 
       <div className="mt-6 flex items-center gap-5">
-        <TeamCrest crestPath={team.crest_path} name={team.short_name} size={80} className="rounded-2xl" />
+        <TeamCrest crestPath={team.crest_path} name={team.short_name} size={100} className="rounded-2xl" />
         <div>
           <h1 className="text-3xl font-bold text-white">{team.name}</h1>
           <p className="text-sm text-navy-400">{team.short_name}</p>
