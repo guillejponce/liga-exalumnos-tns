@@ -1,0 +1,156 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.competitions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  season_id uuid NOT NULL,
+  name text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT competitions_pkey PRIMARY KEY (id),
+  CONSTRAINT competitions_season_id_fkey FOREIGN KEY (season_id) REFERENCES public.seasons(id)
+);
+CREATE TABLE public.league_memberships (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  league_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  role USER-DEFINED NOT NULL DEFAULT 'viewer'::league_role,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT league_memberships_pkey PRIMARY KEY (id),
+  CONSTRAINT league_memberships_league_id_fkey FOREIGN KEY (league_id) REFERENCES public.leagues(id)
+);
+CREATE TABLE public.leagues (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  slug text NOT NULL UNIQUE,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT leagues_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.match_events (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  match_id uuid NOT NULL,
+  team_season_id uuid NOT NULL,
+  player_id uuid,
+  type USER-DEFINED NOT NULL,
+  minute integer,
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT match_events_pkey PRIMARY KEY (id),
+  CONSTRAINT match_events_match_id_fkey FOREIGN KEY (match_id) REFERENCES public.matches(id),
+  CONSTRAINT match_events_team_season_id_fkey FOREIGN KEY (team_season_id) REFERENCES public.team_season(id),
+  CONSTRAINT match_events_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id)
+);
+CREATE TABLE public.matches (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  stage_id uuid NOT NULL,
+  group_id uuid,
+  round integer,
+  kickoff_at timestamp with time zone,
+  home_team_season_id uuid NOT NULL,
+  away_team_season_id uuid NOT NULL,
+  home_score integer,
+  away_score integer,
+  status USER-DEFINED NOT NULL DEFAULT 'scheduled'::match_status,
+  venue text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT matches_pkey PRIMARY KEY (id),
+  CONSTRAINT matches_stage_id_fkey FOREIGN KEY (stage_id) REFERENCES public.stages(id),
+  CONSTRAINT matches_group_id_fkey FOREIGN KEY (group_id) REFERENCES public.stage_groups(id),
+  CONSTRAINT matches_home_team_season_id_fkey FOREIGN KEY (home_team_season_id) REFERENCES public.team_season(id),
+  CONSTRAINT matches_away_team_season_id_fkey FOREIGN KEY (away_team_season_id) REFERENCES public.team_season(id)
+);
+CREATE TABLE public.player_team_season (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  season_id uuid NOT NULL,
+  team_id uuid NOT NULL,
+  player_id uuid NOT NULL,
+  shirt_number integer,
+  is_captain boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT player_team_season_pkey PRIMARY KEY (id),
+  CONSTRAINT player_team_season_season_id_fkey FOREIGN KEY (season_id) REFERENCES public.seasons(id),
+  CONSTRAINT player_team_season_team_id_fkey FOREIGN KEY (team_id) REFERENCES public.teams(id),
+  CONSTRAINT player_team_season_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id)
+);
+CREATE TABLE public.players (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  league_id uuid NOT NULL,
+  first_name text NOT NULL,
+  last_name text,
+  nickname text,
+  photo_path text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  rut text NOT NULL,
+  CONSTRAINT players_pkey PRIMARY KEY (id),
+  CONSTRAINT players_league_id_fkey FOREIGN KEY (league_id) REFERENCES public.leagues(id)
+);
+CREATE TABLE public.seasons (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  league_id uuid NOT NULL,
+  name text NOT NULL,
+  year integer,
+  starts_on date,
+  ends_on date,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  semester integer NOT NULL CHECK (semester = ANY (ARRAY[1, 2])),
+  is_active boolean NOT NULL DEFAULT false,
+  CONSTRAINT seasons_pkey PRIMARY KEY (id),
+  CONSTRAINT seasons_league_id_fkey FOREIGN KEY (league_id) REFERENCES public.leagues(id)
+);
+CREATE TABLE public.stage_group_teams (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  group_id uuid NOT NULL,
+  team_season_id uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT stage_group_teams_pkey PRIMARY KEY (id),
+  CONSTRAINT stage_group_teams_team_season_id_fkey FOREIGN KEY (team_season_id) REFERENCES public.team_season(id),
+  CONSTRAINT stage_group_teams_group_id_fkey FOREIGN KEY (group_id) REFERENCES public.stage_groups(id)
+);
+CREATE TABLE public.stage_groups (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  stage_id uuid NOT NULL,
+  name text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT stage_groups_pkey PRIMARY KEY (id),
+  CONSTRAINT stage_groups_stage_id_fkey FOREIGN KEY (stage_id) REFERENCES public.stages(id)
+);
+CREATE TABLE public.stages (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  competition_id uuid NOT NULL,
+  name text NOT NULL,
+  type USER-DEFINED NOT NULL,
+  stage_order integer NOT NULL,
+  rules jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT stages_pkey PRIMARY KEY (id),
+  CONSTRAINT stages_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id)
+);
+CREATE TABLE public.team_players (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  team_id uuid NOT NULL,
+  player_id uuid NOT NULL,
+  shirt_number integer,
+  is_captain boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT team_players_pkey PRIMARY KEY (id),
+  CONSTRAINT team_players_team_id_fkey FOREIGN KEY (team_id) REFERENCES public.teams(id),
+  CONSTRAINT team_players_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id)
+);
+CREATE TABLE public.team_season (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  season_id uuid NOT NULL,
+  team_id uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT team_season_pkey PRIMARY KEY (id),
+  CONSTRAINT team_season_season_id_fkey FOREIGN KEY (season_id) REFERENCES public.seasons(id),
+  CONSTRAINT team_season_team_id_fkey FOREIGN KEY (team_id) REFERENCES public.teams(id)
+);
+CREATE TABLE public.teams (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  league_id uuid NOT NULL,
+  name text NOT NULL,
+  short_name text,
+  crest_path text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT teams_pkey PRIMARY KEY (id),
+  CONSTRAINT teams_league_id_fkey FOREIGN KEY (league_id) REFERENCES public.leagues(id)
+);

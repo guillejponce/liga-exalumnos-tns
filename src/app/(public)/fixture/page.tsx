@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getLeague, getActiveSeasonForLeague } from '@/lib/league'
 import TeamCrest from '@/components/public/TeamCrest'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = { title: 'Fixture' }
 
 interface TeamInfo {
@@ -220,7 +222,7 @@ function MatchRow({ match }: { match: MatchDisplay }) {
   return (
     <div className="flex items-center justify-between rounded-xl border border-navy-800 bg-navy-900 px-4 py-3 sm:px-6">
       <div className="flex flex-1 items-center justify-end gap-2 sm:gap-3">
-        <span className="text-right text-sm font-medium text-white">{match.home_team.short_name}</span>
+        <span className="text-right text-sm font-medium text-white">{match.home_team.name}</span>
         <TeamCrest crestPath={match.home_team.crest_path} name={match.home_team.short_name} size={40} />
       </div>
 
@@ -239,7 +241,7 @@ function MatchRow({ match }: { match: MatchDisplay }) {
 
       <div className="flex flex-1 items-center gap-2 sm:gap-3">
         <TeamCrest crestPath={match.away_team.crest_path} name={match.away_team.short_name} size={40} />
-        <span className="text-sm font-medium text-white">{match.away_team.short_name}</span>
+        <span className="text-sm font-medium text-white">{match.away_team.name}</span>
       </div>
     </div>
   )

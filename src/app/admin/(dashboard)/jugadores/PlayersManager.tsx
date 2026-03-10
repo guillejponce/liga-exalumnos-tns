@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createPlayer, deletePlayer } from '@/actions/players'
+import { createPlayer, updatePlayer, deletePlayer } from '@/actions/players'
 
 interface PlayerRow {
   id: string
@@ -33,6 +33,7 @@ export default function PlayersManager({
   leagueId: string
 }) {
   const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
 
@@ -50,6 +51,13 @@ export default function PlayersManager({
       return
     }
     setShowForm(false)
+    setError(null)
+  }
+
+  async function handleUpdate(formData: FormData) {
+    const result = await updatePlayer(formData)
+    if (result.error) { setError(result.error); return }
+    setEditingId(null)
     setError(null)
   }
 
@@ -149,6 +157,64 @@ export default function PlayersManager({
             )}
             {filtered.map((player) => {
               const tp = player.team_players?.[0]
+
+              if (editingId === player.id) {
+                return (
+                  <tr key={player.id} className="bg-amber-50">
+                    <td colSpan={5} className="px-4 py-3">
+                      <form action={handleUpdate} className="space-y-3">
+                        <input type="hidden" name="id" value={player.id} />
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600">Nombre *</label>
+                            <input name="first_name" required defaultValue={player.first_name} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600">Apellido</label>
+                            <input name="last_name" defaultValue={player.last_name ?? ''} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600">Apodo</label>
+                            <input name="nickname" defaultValue={player.nickname ?? ''} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600">RUT *</label>
+                            <input name="rut" required defaultValue={player.rut} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600">Equipo</label>
+                            <select name="team_id" defaultValue={tp?.team_id ?? ''} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm">
+                              <option value="">Sin equipo</option>
+                              {teams.map((t) => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="flex items-end gap-4">
+                            <div className="flex-1">
+                              <label className="block text-xs font-medium text-gray-600">Dorsal</label>
+                              <input name="shirt_number" type="number" min={1} max={99} defaultValue={tp?.shirt_number ?? ''} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm" />
+                            </div>
+                            <label className="flex items-center gap-2 pb-1.5 text-xs text-gray-600">
+                              <input name="is_captain" type="checkbox" defaultChecked={tp?.is_captain ?? false} className="rounded border-gray-300" />
+                              Capitán
+                            </label>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button type="submit" className="rounded-lg bg-league-green px-3 py-1.5 text-xs font-medium text-white hover:bg-league-green-dark">
+                            Guardar
+                          </button>
+                          <button type="button" onClick={() => setEditingId(null)} className="text-xs text-gray-500 hover:text-gray-700">
+                            Cancelar
+                          </button>
+                        </div>
+                      </form>
+                    </td>
+                  </tr>
+                )
+              }
+
               return (
                 <tr key={player.id} className="bg-white hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm">
@@ -168,9 +234,14 @@ export default function PlayersManager({
                     {tp?.shirt_number ?? '—'}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => handleDelete(player.id)} className="text-xs text-red-500 hover:underline">
-                      Eliminar
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      <button onClick={() => setEditingId(player.id)} className="text-xs text-navy-600 hover:underline">
+                        Editar
+                      </button>
+                      <button onClick={() => handleDelete(player.id)} className="text-xs text-red-500 hover:underline">
+                        Eliminar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )

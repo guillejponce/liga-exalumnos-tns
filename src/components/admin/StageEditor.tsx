@@ -12,6 +12,7 @@ import {
   updateMatchScore,
   deleteMatch,
 } from '@/actions/matches'
+import MatchEventsEditor from '@/components/admin/MatchEventsEditor'
 
 // ─── Types ───
 
@@ -136,7 +137,7 @@ function LeagueTableEditor({
   }
 
   async function handleGenerate() {
-    if (selectedTeams.length < 2) { onError('Seleccioná al menos 2 equipos'); return }
+    if (selectedTeams.length < 2) { onError('Selecciona al menos 2 equipos'); return }
 
     if (matches.length > 0) {
       if (!confirm(`Ya hay ${matches.length} partidos en esta etapa. ¿Quieres borrarlos y generar de nuevo?`)) return
@@ -254,7 +255,7 @@ function GroupsEditor({
       {/* Info about enrolled teams */}
       {teamSeasons.length === 0 && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
-          No hay equipos inscritos en esta temporada. Inscribí equipos en la pestaña &quot;Equipos inscritos&quot; primero.
+          No hay equipos inscritos en esta temporada. Inscribe equipos en la pestaña &quot;Equipos inscritos&quot; primero.
         </div>
       )}
 
@@ -278,7 +279,7 @@ function GroupsEditor({
 
       {stage.stage_groups.length === 0 && (
         <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-400">
-          Creá los grupos para empezar a asignar equipos
+          Crea los grupos para empezar a asignar equipos
         </div>
       )}
 
@@ -415,7 +416,7 @@ function KnockoutEditor({
 
   async function handleGenerate() {
     const valid = matchups.filter((m) => m.home && m.away && m.home !== m.away)
-    if (valid.length === 0) { onError('Definí al menos una llave válida'); return }
+    if (valid.length === 0) { onError('Define al menos una llave válida'); return }
 
     setGenerating(true)
     const result = await generateKnockoutMatches(
@@ -516,7 +517,7 @@ function KnockoutEditor({
 
       {matches.length === 0 && (
         <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-400">
-          Definí las llaves arriba para crear los partidos de eliminación directa
+          Define las llaves arriba para crear los partidos de eliminación directa
         </div>
       )}
     </div>
@@ -544,7 +545,7 @@ function MatchList({
     <div className="space-y-3">
       {matches.length === 0 && (
         <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-400">
-          Seleccioná equipos y generá el fixture
+          Selecciona equipos y genera el fixture
         </div>
       )}
 
@@ -577,6 +578,7 @@ function MatchRowInline({
   onError: (msg: string) => void
 }) {
   const [editing, setEditing] = useState(false)
+  const [showEvents, setShowEvents] = useState(false)
 
   async function handleSave(formData: FormData) {
     formData.set('id', match.id)
@@ -593,44 +595,64 @@ function MatchRowInline({
 
   if (editing) {
     return (
-      <form action={handleSave} className="flex items-center gap-2 px-4 py-2">
-        <span className="flex-1 text-right text-xs font-medium">{match.home_team_season.team.short_name}</span>
-        <input name="home_score" type="number" min={0} defaultValue={match.home_score ?? 0} className="w-10 rounded border border-gray-300 px-1 py-0.5 text-center text-xs" />
-        <span className="text-[10px] text-gray-400">-</span>
-        <input name="away_score" type="number" min={0} defaultValue={match.away_score ?? 0} className="w-10 rounded border border-gray-300 px-1 py-0.5 text-center text-xs" />
-        <span className="flex-1 text-xs font-medium">{match.away_team_season.team.short_name}</span>
-        <select name="status" defaultValue={match.status} className="rounded border border-gray-300 px-1 py-0.5 text-[10px]">
-          <option value="scheduled">Prog.</option>
-          <option value="played">Jugado</option>
-        </select>
-        <button type="submit" className="rounded bg-league-green px-2 py-0.5 text-[10px] text-white">OK</button>
-        <button type="button" onClick={() => setEditing(false)} className="text-[10px] text-gray-400">x</button>
-      </form>
+      <div className="px-4 py-2 space-y-2">
+        <form action={handleSave} className="flex items-center gap-2">
+          <span className="flex-1 text-right text-xs font-medium">{match.home_team_season.team.short_name}</span>
+          <input name="home_score" type="number" min={0} defaultValue={match.home_score ?? 0} className="w-10 rounded border border-gray-300 px-1 py-0.5 text-center text-xs" />
+          <span className="text-[10px] text-gray-400">-</span>
+          <input name="away_score" type="number" min={0} defaultValue={match.away_score ?? 0} className="w-10 rounded border border-gray-300 px-1 py-0.5 text-center text-xs" />
+          <span className="flex-1 text-xs font-medium">{match.away_team_season.team.short_name}</span>
+          <select name="status" defaultValue={match.status} className="rounded border border-gray-300 px-1 py-0.5 text-[10px]">
+            <option value="scheduled">Prog.</option>
+            <option value="played">Jugado</option>
+          </select>
+          <button type="submit" className="rounded bg-league-green px-2 py-0.5 text-[10px] text-white">OK</button>
+          <button type="button" onClick={() => setEditing(false)} className="text-[10px] text-gray-400">x</button>
+        </form>
+      </div>
     )
   }
 
   return (
-    <div className="flex items-center justify-between px-4 py-1.5 hover:bg-gray-50">
-      <div className="flex flex-1 items-center gap-1.5">
-        <span className="flex-1 text-right text-xs font-medium text-gray-800">
-          {match.home_team_season.team.short_name}
-        </span>
-        <div className="flex items-center gap-0.5 rounded bg-gray-100 px-1.5 py-0.5">
-          <span className="text-xs font-bold text-gray-700">{match.home_score ?? '-'}</span>
-          <span className="text-[10px] text-gray-400">:</span>
-          <span className="text-xs font-bold text-gray-700">{match.away_score ?? '-'}</span>
+    <div>
+      <div className="flex items-center justify-between px-4 py-1.5 hover:bg-gray-50">
+        <div className="flex flex-1 items-center gap-1.5">
+          <span className="flex-1 text-right text-xs font-medium text-gray-800">
+            {match.home_team_season.team.short_name}
+          </span>
+          <div className="flex items-center gap-0.5 rounded bg-gray-100 px-1.5 py-0.5">
+            <span className="text-xs font-bold text-gray-700">{match.home_score ?? '-'}</span>
+            <span className="text-[10px] text-gray-400">:</span>
+            <span className="text-xs font-bold text-gray-700">{match.away_score ?? '-'}</span>
+          </div>
+          <span className="flex-1 text-xs font-medium text-gray-800">
+            {match.away_team_season.team.short_name}
+          </span>
         </div>
-        <span className="flex-1 text-xs font-medium text-gray-800">
-          {match.away_team_season.team.short_name}
-        </span>
+        <div className="flex items-center gap-1.5 ml-2">
+          <span className={`rounded px-1 py-0.5 text-[9px] font-medium ${match.status === 'played' ? 'bg-league-green/10 text-league-green' : 'bg-gray-100 text-gray-400'}`}>
+            {match.status === 'played' ? 'Jugado' : 'Prog.'}
+          </span>
+          {match.status === 'played' && (
+            <button onClick={() => setShowEvents(!showEvents)} className="text-[10px] text-league-green hover:underline">
+              {showEvents ? 'Ocultar' : 'Eventos'}
+            </button>
+          )}
+          <button onClick={() => setEditing(true)} className="text-[10px] text-navy-600 hover:underline">Editar</button>
+          <button onClick={handleDelete} className="text-[10px] text-red-500 hover:underline">x</button>
+        </div>
       </div>
-      <div className="flex items-center gap-1.5 ml-2">
-        <span className={`rounded px-1 py-0.5 text-[9px] font-medium ${match.status === 'played' ? 'bg-league-green/10 text-league-green' : 'bg-gray-100 text-gray-400'}`}>
-          {match.status === 'played' ? 'Jugado' : 'Prog.'}
-        </span>
-        <button onClick={() => setEditing(true)} className="text-[10px] text-navy-600 hover:underline">Editar</button>
-        <button onClick={handleDelete} className="text-[10px] text-red-500 hover:underline">x</button>
-      </div>
+      {showEvents && match.status === 'played' && (
+        <div className="px-4 pb-2">
+          <MatchEventsEditor
+            matchId={match.id}
+            homeTeamSeasonId={match.home_team_season_id}
+            awayTeamSeasonId={match.away_team_season_id}
+            homeTeamName={match.home_team_season.team.short_name}
+            awayTeamName={match.away_team_season.team.short_name}
+          />
+        </div>
+      )}
     </div>
   )
 }

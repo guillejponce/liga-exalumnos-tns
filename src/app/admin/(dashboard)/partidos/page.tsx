@@ -23,7 +23,7 @@ export default async function PartidosAdminPage() {
         <h1 className="text-2xl font-bold text-gray-900">Partidos</h1>
         <div className="mt-8 flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-16 text-center">
           <p className="text-gray-500">No hay una temporada activa.</p>
-          <p className="mt-1 text-sm text-gray-400">Activá una temporada en la sección Temporadas para gestionar partidos.</p>
+          <p className="mt-1 text-sm text-gray-400">Activa una temporada en la sección Temporadas para gestionar partidos.</p>
         </div>
       </div>
     )

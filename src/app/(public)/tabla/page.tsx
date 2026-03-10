@@ -14,6 +14,8 @@ interface StandingRow {
 }
 import TeamCrest from '@/components/public/TeamCrest'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = { title: 'Tabla de posiciones' }
 
 const TABLE_HEADERS = ['#', 'Equipo', 'PJ', 'G', 'E', 'P', 'GF', 'GC', 'DG', 'Pts'] as const

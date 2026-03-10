@@ -203,7 +203,7 @@ export default async function HomePage() {
                         <div className="mx-auto w-fit">
                           <TeamCrest crestPath={lastResult.home_team.crest_path} name={lastResult.home_team.short_name} size={64} />
                         </div>
-                        <p className="mt-3 text-sm font-semibold text-white">{lastResult.home_team.short_name}</p>
+                        <p className="mt-3 text-sm font-semibold text-white">{lastResult.home_team.name}</p>
                       </div>
 
                       <div className="flex flex-col items-center">
@@ -219,7 +219,7 @@ export default async function HomePage() {
                         <div className="mx-auto w-fit">
                           <TeamCrest crestPath={lastResult.away_team.crest_path} name={lastResult.away_team.short_name} size={64} />
                         </div>
-                        <p className="mt-3 text-sm font-semibold text-white">{lastResult.away_team.short_name}</p>
+                        <p className="mt-3 text-sm font-semibold text-white">{lastResult.away_team.name}</p>
                       </div>
                     </div>
                   </div>
@@ -246,7 +246,7 @@ export default async function HomePage() {
                         <div className="mx-auto w-fit">
                           <TeamCrest crestPath={nextMatch.home_team.crest_path} name={nextMatch.home_team.short_name} size={64} />
                         </div>
-                        <p className="mt-3 text-sm font-semibold text-white">{nextMatch.home_team.short_name}</p>
+                        <p className="mt-3 text-sm font-semibold text-white">{nextMatch.home_team.name}</p>
                       </div>
 
                       <div className="flex flex-col items-center">
@@ -266,7 +266,7 @@ export default async function HomePage() {
                         <div className="mx-auto w-fit">
                           <TeamCrest crestPath={nextMatch.away_team.crest_path} name={nextMatch.away_team.short_name} size={64} />
                         </div>
-                        <p className="mt-3 text-sm font-semibold text-white">{nextMatch.away_team.short_name}</p>
+                        <p className="mt-3 text-sm font-semibold text-white">{nextMatch.away_team.name}</p>
                       </div>
                     </div>
                   </div>
@@ -371,7 +371,7 @@ function MatchCard({ match }: { match: MatchDisplay }) {
   return (
     <div className="flex items-center gap-4 rounded-xl border border-navy-800/50 bg-navy-900/60 px-5 py-4 transition-colors hover:border-navy-700">
       <div className="flex flex-1 items-center justify-end gap-2">
-        <span className="text-right text-xs font-medium text-navy-200">{match.home_team.short_name}</span>
+        <span className="text-right text-xs font-medium text-navy-200">{match.home_team.name}</span>
         <TeamCrest crestPath={match.home_team.crest_path} name={match.home_team.short_name} size={36} />
       </div>
 
@@ -383,7 +383,7 @@ function MatchCard({ match }: { match: MatchDisplay }) {
 
       <div className="flex flex-1 items-center gap-2">
         <TeamCrest crestPath={match.away_team.crest_path} name={match.away_team.short_name} size={36} />
-        <span className="text-xs font-medium text-navy-200">{match.away_team.short_name}</span>
+        <span className="text-xs font-medium text-navy-200">{match.away_team.name}</span>
       </div>
     </div>
   )
@@ -397,7 +397,7 @@ function UpcomingCard({ match }: { match: MatchDisplay }) {
   return (
     <div className="flex items-center gap-4 rounded-xl border border-navy-800/50 bg-navy-900/60 px-5 py-4 transition-colors hover:border-navy-700">
       <div className="flex flex-1 items-center justify-end gap-2">
-        <span className="text-right text-xs font-medium text-navy-200">{match.home_team.short_name}</span>
+        <span className="text-right text-xs font-medium text-navy-200">{match.home_team.name}</span>
         <TeamCrest crestPath={match.home_team.crest_path} name={match.home_team.short_name} size={36} />
       </div>
 
@@ -408,7 +408,7 @@ function UpcomingCard({ match }: { match: MatchDisplay }) {
 
       <div className="flex flex-1 items-center gap-2">
         <TeamCrest crestPath={match.away_team.crest_path} name={match.away_team.short_name} size={36} />
-        <span className="text-xs font-medium text-navy-200">{match.away_team.short_name}</span>
+        <span className="text-xs font-medium text-navy-200">{match.away_team.name}</span>
       </div>
     </div>
   )

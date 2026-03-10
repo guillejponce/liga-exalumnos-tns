@@ -4,6 +4,8 @@ import { getLeague } from '@/lib/league'
 import Link from 'next/link'
 import TeamCrest from '@/components/public/TeamCrest'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = { title: 'Equipos' }
 
 export default async function EquiposPage() {

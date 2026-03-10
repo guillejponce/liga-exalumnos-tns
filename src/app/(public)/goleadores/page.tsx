@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getLeague, getActiveSeasonForLeague } from '@/lib/league'
 import TeamCrest from '@/components/public/TeamCrest'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = { title: 'Goleadores' }
 
 interface ScorerRow {
@@ -42,29 +44,33 @@ export default async function GoleadoresPage() {
         if (matches && matches.length > 0) {
           const matchIds = matches.map((m) => m.id)
 
-          // Get goal events
           const { data: events } = await supabase
             .from('match_events')
-            .select(`
-              id, event_type,
-              team_player:team_players!inner(
-                player:players!inner(first_name, last_name, nickname),
-                team:teams!inner(name, short_name, crest_path)
-              )
-            `)
+            .select('id, team_season_id, player_id')
             .in('match_id', matchIds)
-            .eq('event_type', 'goal')
+            .eq('type', 'goal')
 
           if (events && events.length > 0) {
-            // Aggregate goals per player
+            const playerIds = [...new Set(events.map((e) => e.player_id).filter(Boolean))]
+            const teamSeasonIds = [...new Set(events.map((e) => e.team_season_id))]
+
+            const [playersRes, tsRes] = await Promise.all([
+              supabase.from('players').select('id, first_name, last_name, nickname').in('id', playerIds),
+              supabase.from('team_season').select('id, team:teams(name, short_name, crest_path)').in('id', teamSeasonIds),
+            ])
+
+            const playerMap = new Map((playersRes.data ?? []).map((p) => [p.id, p]))
+            const tsMap = new Map(
+              (tsRes.data ?? []).map((ts) => {
+                const team = Array.isArray(ts.team) ? ts.team[0] : ts.team
+                return [ts.id, team]
+              })
+            )
+
             const goalMap = new Map<string, ScorerRow>()
-
             for (const event of events) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const tp = event.team_player as any
-              const player = Array.isArray(tp?.player) ? tp.player[0] : tp?.player
-              const team = Array.isArray(tp?.team) ? tp.team[0] : tp?.team
-
+              const player = event.player_id ? playerMap.get(event.player_id) : null
+              const team = event.team_season_id ? tsMap.get(event.team_season_id) : null
               if (!player || !team) continue
 
               const name = player.nickname
@@ -72,15 +78,14 @@ export default async function GoleadoresPage() {
                 : `${player.first_name} ${player.last_name ?? ''}`
 
               const key = name.trim()
-
               if (goalMap.has(key)) {
                 goalMap.get(key)!.goals++
               } else {
                 goalMap.set(key, {
                   playerName: name.trim(),
-                  teamName: team.name,
-                  teamShortName: team.short_name,
-                  crestPath: team.crest_path,
+                  teamName: (team as { name?: string }).name ?? '',
+                  teamShortName: (team as { short_name?: string }).short_name ?? '',
+                  crestPath: (team as { crest_path?: string | null }).crest_path ?? null,
                   goals: 1,
                 })
               }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createMatch, updateMatchScore, deleteMatch, createCompetition, createStage } from '@/actions/matches'
+import MatchEventsEditor from '@/components/admin/MatchEventsEditor'
 
 interface Props {
   seasonId: string
@@ -47,6 +48,7 @@ export default function MatchesManager({ seasonId, competitions, teamSeasons, ma
   const [showStageForm, setShowStageForm] = useState<string | null>(null)
   const [showMatchForm, setShowMatchForm] = useState<string | null>(null)
   const [editingMatch, setEditingMatch] = useState<string | null>(null)
+  const [showEventsFor, setShowEventsFor] = useState<string | null>(null)
 
   async function handleCreateComp(formData: FormData) {
     formData.set('season_id', seasonId)
@@ -107,7 +109,7 @@ export default function MatchesManager({ seasonId, competitions, teamSeasons, ma
 
       {competitions.length === 0 && !showCompForm && (
         <div className="rounded-xl border border-gray-200 bg-white px-4 py-12 text-center text-sm text-gray-400">
-          No hay competencias. Creá una competencia para empezar a cargar partidos.
+          No hay competencias. Crea una competencia para empezar a cargar partidos.
         </div>
       )}
 
@@ -181,6 +183,17 @@ export default function MatchesManager({ seasonId, competitions, teamSeasons, ma
                     <form action={handleCreateMatch} className="bg-gray-50 px-4 pb-3">
                       <input type="hidden" name="stage_id" value={stage.id} />
                       <div className="flex flex-wrap items-end gap-3">
+                        {stage.stage_groups.length > 0 && (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600">Grupo</label>
+                            <select name="group_id" className="mt-1 rounded-lg border border-gray-300 px-2 py-1.5 text-sm">
+                              <option value="">Sin grupo</option>
+                              {stage.stage_groups.map((g) => (
+                                <option key={g.id} value={g.id}>{g.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
                         <div>
                           <label className="block text-xs font-medium text-gray-600">Local</label>
                           <select name="home_team_season_id" required className="mt-1 rounded-lg border border-gray-300 px-2 py-1.5 text-sm">
@@ -219,50 +232,71 @@ export default function MatchesManager({ seasonId, competitions, teamSeasons, ma
                   )}
 
                   {stageMatches.map((match) => (
-                    <div key={match.id} className="flex items-center justify-between border-t border-gray-50 px-4 py-2.5 hover:bg-gray-50">
-                      {editingMatch === match.id ? (
-                        <form action={handleUpdateScore} className="flex w-full items-center gap-2">
-                          <input type="hidden" name="id" value={match.id} />
-                          <span className="flex-1 text-right text-sm font-medium">{match.home_team_season.team.short_name}</span>
-                          <input name="home_score" type="number" min={0} defaultValue={match.home_score ?? 0} className="w-12 rounded border border-gray-300 px-2 py-1 text-center text-sm" />
-                          <span className="text-xs text-gray-400">-</span>
-                          <input name="away_score" type="number" min={0} defaultValue={match.away_score ?? 0} className="w-12 rounded border border-gray-300 px-2 py-1 text-center text-sm" />
-                          <span className="flex-1 text-sm font-medium">{match.away_team_season.team.short_name}</span>
-                          <select name="status" defaultValue={match.status} className="rounded border border-gray-300 px-2 py-1 text-xs">
-                            <option value="scheduled">Programado</option>
-                            <option value="played">Jugado</option>
-                          </select>
-                          <button type="submit" className="rounded bg-league-green px-2 py-1 text-xs text-white">OK</button>
-                          <button type="button" onClick={() => setEditingMatch(null)} className="text-xs text-gray-400">x</button>
-                        </form>
-                      ) : (
-                        <>
-                          <div className="flex flex-1 items-center gap-2">
-                            {match.round && <span className="text-xs text-gray-400">F{match.round}</span>}
-                            <span className="flex-1 text-right text-sm font-medium text-gray-900">
-                              {match.home_team_season.team.short_name}
-                            </span>
-                            <div className="flex items-center gap-1 rounded bg-gray-100 px-2 py-0.5">
-                              <span className="text-sm font-bold text-gray-700">{match.home_score ?? '-'}</span>
-                              <span className="text-xs text-gray-400">:</span>
-                              <span className="text-sm font-bold text-gray-700">{match.away_score ?? '-'}</span>
+                    <div key={match.id} className="border-t border-gray-50">
+                      <div className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
+                        {editingMatch === match.id ? (
+                          <form action={handleUpdateScore} className="flex w-full items-center gap-2">
+                            <input type="hidden" name="id" value={match.id} />
+                            <span className="flex-1 text-right text-sm font-medium">{match.home_team_season.team.short_name}</span>
+                            <input name="home_score" type="number" min={0} defaultValue={match.home_score ?? 0} className="w-12 rounded border border-gray-300 px-2 py-1 text-center text-sm" />
+                            <span className="text-xs text-gray-400">-</span>
+                            <input name="away_score" type="number" min={0} defaultValue={match.away_score ?? 0} className="w-12 rounded border border-gray-300 px-2 py-1 text-center text-sm" />
+                            <span className="flex-1 text-sm font-medium">{match.away_team_season.team.short_name}</span>
+                            <select name="status" defaultValue={match.status} className="rounded border border-gray-300 px-2 py-1 text-xs">
+                              <option value="scheduled">Programado</option>
+                              <option value="played">Jugado</option>
+                            </select>
+                            <button type="submit" className="rounded bg-league-green px-2 py-1 text-xs text-white">OK</button>
+                            <button type="button" onClick={() => setEditingMatch(null)} className="text-xs text-gray-400">x</button>
+                          </form>
+                        ) : (
+                          <>
+                            <div className="flex flex-1 items-center gap-2">
+                              {match.round && <span className="text-xs text-gray-400">F{match.round}</span>}
+                              <span className="flex-1 text-right text-sm font-medium text-gray-900">
+                                {match.home_team_season.team.short_name}
+                              </span>
+                              <div className="flex items-center gap-1 rounded bg-gray-100 px-2 py-0.5">
+                                <span className="text-sm font-bold text-gray-700">{match.home_score ?? '-'}</span>
+                                <span className="text-xs text-gray-400">:</span>
+                                <span className="text-sm font-bold text-gray-700">{match.away_score ?? '-'}</span>
+                              </div>
+                              <span className="flex-1 text-sm font-medium text-gray-900">
+                                {match.away_team_season.team.short_name}
+                              </span>
                             </div>
-                            <span className="flex-1 text-sm font-medium text-gray-900">
-                              {match.away_team_season.team.short_name}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${match.status === 'played' ? 'bg-league-green/10 text-league-green' : 'bg-gray-100 text-gray-500'}`}>
-                              {match.status === 'played' ? 'Jugado' : 'Prog.'}
-                            </span>
-                            <button onClick={() => setEditingMatch(match.id)} className="text-xs text-navy-600 hover:underline">
-                              Editar
-                            </button>
-                            <button onClick={() => handleDeleteMatch(match.id)} className="text-xs text-red-500 hover:underline">
-                              x
-                            </button>
-                          </div>
-                        </>
+                            <div className="flex items-center gap-2">
+                              <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${match.status === 'played' ? 'bg-league-green/10 text-league-green' : 'bg-gray-100 text-gray-500'}`}>
+                                {match.status === 'played' ? 'Jugado' : 'Prog.'}
+                              </span>
+                              {match.status === 'played' && (
+                                <button
+                                  onClick={() => setShowEventsFor(showEventsFor === match.id ? null : match.id)}
+                                  className="text-xs text-league-green hover:underline"
+                                >
+                                  {showEventsFor === match.id ? 'Ocultar' : 'Eventos'}
+                                </button>
+                              )}
+                              <button onClick={() => setEditingMatch(match.id)} className="text-xs text-navy-600 hover:underline">
+                                Editar
+                              </button>
+                              <button onClick={() => handleDeleteMatch(match.id)} className="text-xs text-red-500 hover:underline">
+                                x
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      {showEventsFor === match.id && match.status === 'played' && (
+                        <div className="px-4 pb-3">
+                          <MatchEventsEditor
+                            matchId={match.id}
+                            homeTeamSeasonId={match.home_team_season.id}
+                            awayTeamSeasonId={match.away_team_season.id}
+                            homeTeamName={match.home_team_season.team.short_name}
+                            awayTeamName={match.away_team_season.team.short_name}
+                          />
+                        </div>
                       )}
                     </div>
                   ))}

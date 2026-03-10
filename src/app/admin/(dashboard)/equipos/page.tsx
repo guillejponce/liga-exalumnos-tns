@@ -10,7 +10,7 @@ export default async function EquiposAdminPage() {
   if (!league) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="text-gray-500">No se encontró la liga. Creá una liga primero en Supabase.</p>
+        <p className="text-gray-500">No se encontró la liga. Crea una liga primero en Supabase.</p>
       </div>
     )
   }

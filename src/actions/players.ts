@@ -58,6 +58,9 @@ export async function updatePlayer(formData: FormData) {
   const last_name = (formData.get('last_name') as string) || null
   const nickname = (formData.get('nickname') as string) || null
   const rut = formData.get('rut') as string
+  const team_id = (formData.get('team_id') as string) || null
+  const shirt_number = formData.get('shirt_number') as string
+  const is_captain = formData.get('is_captain') === 'on'
 
   if (!id || !first_name || !rut) {
     return { error: 'Datos incompletos' }
@@ -70,7 +73,20 @@ export async function updatePlayer(formData: FormData) {
 
   if (error) return { error: error.message }
 
+  await supabase.from('team_players').delete().eq('player_id', id)
+
+  if (team_id) {
+    const { error: tpError } = await supabase.from('team_players').insert({
+      team_id,
+      player_id: id,
+      shirt_number: shirt_number ? parseInt(shirt_number) : null,
+      is_captain,
+    })
+    if (tpError) return { error: tpError.message }
+  }
+
   revalidatePath('/admin/jugadores')
+  revalidatePath('/equipos')
   return { success: true }
 }
 
