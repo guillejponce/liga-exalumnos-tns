@@ -16,7 +16,8 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
 function getCrestUrl(crestPath: string | null): string | null {
   if (!crestPath) return null
-  return `${SUPABASE_URL}/storage/v1/object/public/public_liga/${crestPath}`
+  const path = crestPath.replace(/\.(jpe?g)$/i, '.png')
+  return `${SUPABASE_URL}/storage/v1/object/public/public_liga/${path}`
 }
 
 export default function TeamsManager({ teams, leagueId }: { teams: TeamRow[]; leagueId: string }) {
