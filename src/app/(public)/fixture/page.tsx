@@ -114,7 +114,7 @@ export default async function FixturePage() {
             const assignedGroupIds = new Set(groups.map((g) => g.id))
             const ungrouped = directMatches.filter((m) => !m.group_id || !assignedGroupIds.has(m.group_id))
             if (ungrouped.length > 0) {
-              groupSections.push({ name: 'Sin grupo', id: null, matchesByRound: groupMatchesByRound(ungrouped) })
+              groupSections.push({ name: 'Sin grupo', id: 'ungrouped', matchesByRound: groupMatchesByRound(ungrouped) })
             }
 
             if (groupSections.some((g) => g.matchesByRound.length > 0)) {
