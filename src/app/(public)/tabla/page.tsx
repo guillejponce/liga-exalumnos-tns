@@ -17,10 +17,13 @@ export default async function TablaPage() {
     if (activeSeason) {
       const supabase = await createClient()
 
-      const { data: teamSeasons } = await supabase
+      const { data: teamSeasonsRaw } = await supabase
         .from('team_season')
         .select('id, team:teams(*)')
         .eq('season_id', activeSeason.id)
+
+      // Normalizar: Supabase puede devolver team como objeto o array según el schema
+      const teamSeasons = normalizeTeamSeasons(teamSeasonsRaw ?? [])
 
       const { data: stages } = await supabase
         .from('stages')
@@ -106,6 +109,17 @@ interface MatchData {
 interface TeamSeasonData {
   id: string
   team: { id: string; name: string; short_name: string; league_id: string; crest_path: string | null; created_at: string }
+}
+
+function normalizeTeamSeasons(raw: { id: string; team: unknown }[]): TeamSeasonData[] {
+  return raw
+    .map((ts) => {
+      const team = Array.isArray(ts.team) ? ts.team[0] : ts.team
+      if (!team || typeof team !== 'object') return null
+      const t = team as Record<string, unknown>
+      return { id: ts.id, team: t } as TeamSeasonData
+    })
+    .filter((ts): ts is TeamSeasonData => ts !== null)
 }
 
 function calculateStandings(teamSeasons: TeamSeasonData[], matches: MatchData[]): StandingRow[] {
