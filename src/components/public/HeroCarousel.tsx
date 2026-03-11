@@ -3,13 +3,31 @@
 import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 
-const SLIDES = [
-  { src: '/assets/carousel_1.png', alt: 'Liga Nico Sabag' },
-  { src: '/assets/carousel_2.png', alt: 'Liga Nico Sabag' },
-  { src: '/assets/carousel_3.png', alt: 'Liga Nico Sabag' },
-  { src: '/assets/carousel_4.png', alt: 'Liga Nico Sabag' },
-  { src: '/assets/carousel_5.png', alt: 'Liga Nico Sabag' },
+const CAROUSEL_IMAGES = [
+  '/assets/carousel/IMG_5957.jpeg',
+  '/assets/carousel/IMG_5958.jpeg',
+  '/assets/carousel/IMG_5965.jpeg',
+  '/assets/carousel/IMG_7112.jpeg',
+  '/assets/carousel/IMG_7114.jpeg',
+  '/assets/carousel/IMG_7274.jpeg',
+  '/assets/carousel/IMG_7351.jpeg',
+  '/assets/carousel/IMG_7502.jpeg',
 ]
+
+// Fisher–Yates shuffle para orden aleatorio
+function shuffle<T>(arr: T[]): T[] {
+  const copy = [...arr]
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+  }
+  return copy
+}
+
+const SLIDES = shuffle(CAROUSEL_IMAGES).map((src) => ({
+  src,
+  alt: 'Liga Nico Sabag',
+}))
 
 const PLACEHOLDER_GRADIENTS = [
   'from-navy-900 via-league-green/20 to-navy-950',
@@ -17,6 +35,9 @@ const PLACEHOLDER_GRADIENTS = [
   'from-league-green/10 via-navy-900 to-navy-950',
   'from-navy-800 via-navy-950 to-league-green/15',
   'from-navy-950 via-league-green/15 to-navy-900',
+  'from-navy-900 via-navy-950 to-league-green/20',
+  'from-navy-800 via-league-green/10 to-navy-950',
+  'from-navy-950 via-navy-900 to-league-green/15',
 ]
 
 const INTERVAL_MS = 5000

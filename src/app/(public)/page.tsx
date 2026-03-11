@@ -125,14 +125,11 @@ export default async function HomePage() {
           <Image
             src="/assets/LNS blanco.png"
             alt="Liga Nico Sabag"
-            width={240}
-            height={240}
-            className="h-36 w-auto drop-shadow-2xl sm:h-48 lg:h-56"
+            width={300}
+            height={300}
+            className="h-64 w-auto drop-shadow-2xl sm:h-288 lg:h-120"
             priority
           />
-          <p className="mt-6 max-w-md text-lg font-medium tracking-wide text-white/80 sm:text-xl">
-            Liga de fútbol de exalumnos Newland
-          </p>
 
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Link
