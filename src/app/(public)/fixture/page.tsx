@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getLeague, getActiveSeasonForLeague } from '@/lib/league'
 import TeamCrest from '@/components/public/TeamCrest'
@@ -42,7 +43,6 @@ export default async function FixturePage() {
     if (activeSeason) {
       const supabase = await createClient()
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: stagesRaw } = await supabase
         .from('stages')
         .select('id, name, type, stage_order, competition:competitions!inner(id, name, season_id)')
@@ -64,7 +64,7 @@ export default async function FixturePage() {
           .order('kickoff_at')
 
         // Fetch stage_groups
-        let stageGroupsMap: Record<string, { id: string; name: string }[]> = {}
+        const stageGroupsMap: Record<string, { id: string; name: string }[]> = {}
         const groupStageIds = stagesRaw.filter((s) => s.type === 'groups').map((s) => s.id)
         if (groupStageIds.length > 0) {
           const sgRes = await supabase.from('stage_groups').select('id, name, stage_id').in('stage_id', groupStageIds)
@@ -220,7 +220,10 @@ function MatchRow({ match }: { match: MatchDisplay }) {
     : null
 
   return (
-    <div className="flex items-center justify-between rounded-xl border border-navy-800 bg-navy-900 px-4 py-3 sm:px-6">
+    <Link
+      href={`/fixture/${match.id}`}
+      className="flex items-center justify-between rounded-xl border border-navy-800 bg-navy-900 px-4 py-3 sm:px-6 transition-colors hover:bg-navy-800 cursor-pointer"
+    >
       <div className="flex flex-1 items-center justify-end gap-2 sm:gap-3">
         <span className="text-right text-sm font-medium text-white">{match.home_team.name}</span>
         <TeamCrest crestPath={match.home_team.crest_path} name={match.home_team.short_name} size={40} />
@@ -243,6 +246,6 @@ function MatchRow({ match }: { match: MatchDisplay }) {
         <TeamCrest crestPath={match.away_team.crest_path} name={match.away_team.short_name} size={40} />
         <span className="text-sm font-medium text-white">{match.away_team.name}</span>
       </div>
-    </div>
+    </Link>
   )
 }

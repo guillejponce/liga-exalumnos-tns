@@ -18,7 +18,7 @@ export interface MatchEventDisplay {
   player_id: string
   team_season_id: string
   player: { first_name: string; last_name: string | null; nickname: string | null }
-  team: { name: string; short_name: string | null }
+  team: { name: string; short_name: string | null; crest_path: string | null }
 }
 
 export async function getMatchEvents(matchId: string) {
@@ -39,7 +39,10 @@ export async function getMatchEvents(matchId: string) {
 
   const [playersRes, teamSeasonsRes] = await Promise.all([
     supabase.from('players').select('id, first_name, last_name, nickname').in('id', playerIds),
-    supabase.from('team_season').select('id, team:teams(id, name, short_name)').in('id', teamSeasonIds),
+    supabase
+      .from('team_season')
+      .select('id, team:teams(id, name, short_name, crest_path)')
+      .in('id', teamSeasonIds),
   ])
 
   const playerMap = new Map((playersRes.data ?? []).map((p) => [p.id, p]))
@@ -52,7 +55,7 @@ export async function getMatchEvents(matchId: string) {
 
   const data: MatchEventDisplay[] = eventsList.map((ev) => {
     const player = playerMap.get(ev.player_id)
-    const team = tsMap.get(ev.team_season_id) as { name: string; short_name: string | null } | undefined
+    const team = tsMap.get(ev.team_season_id) as { name: string; short_name: string | null; crest_path: string | null } | undefined
     return {
       id: ev.id,
       type: ev.type as EventType,
@@ -60,7 +63,7 @@ export async function getMatchEvents(matchId: string) {
       player_id: ev.player_id ?? '',
       team_season_id: ev.team_season_id,
       player: player ?? { first_name: '?', last_name: null, nickname: null },
-      team: team ?? { name: '?', short_name: null },
+      team: team ?? { name: '?', short_name: null, crest_path: null },
     }
   })
   return { data }
