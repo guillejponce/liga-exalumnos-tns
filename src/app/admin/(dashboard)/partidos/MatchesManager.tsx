@@ -180,7 +180,7 @@ export default function MatchesManager({ seasonId, competitions, teamSeasons, ma
                   </div>
 
                   {showMatchForm === stage.id && (
-                    <form action={handleCreateMatch} className="bg-gray-50 px-4 pb-3">
+                    <form action={handleCreateMatch} className="bg-gray-50 px-4 pb-3 space-y-3">
                       <input type="hidden" name="stage_id" value={stage.id} />
                       <div className="flex flex-wrap items-end gap-3">
                         {stage.stage_groups.length > 0 && (
@@ -220,10 +220,28 @@ export default function MatchesManager({ seasonId, competitions, teamSeasons, ma
                           <label className="block text-xs font-medium text-gray-600">Hora</label>
                           <input name="kickoff_at" type="datetime-local" className="mt-1 rounded-lg border border-gray-300 px-2 py-1.5 text-sm" />
                         </div>
-                        <button type="submit" className="rounded-lg bg-navy-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-navy-800">
-                          Crear
-                        </button>
                       </div>
+                      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-dashed border-gray-300 bg-white p-3">
+                        <span className="w-full text-[10px] font-semibold uppercase tracking-wider text-gray-400">Resultado (opcional — para partidos ya jugados)</span>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600">Goles local</label>
+                          <input name="home_score" type="number" min={0} placeholder="—" className="mt-1 w-16 rounded-lg border border-gray-300 px-2 py-1.5 text-center text-sm" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600">Goles visita</label>
+                          <input name="away_score" type="number" min={0} placeholder="—" className="mt-1 w-16 rounded-lg border border-gray-300 px-2 py-1.5 text-center text-sm" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600">Estado</label>
+                          <select name="status" defaultValue="scheduled" className="mt-1 rounded-lg border border-gray-300 px-2 py-1.5 text-sm">
+                            <option value="scheduled">Programado</option>
+                            <option value="played">Jugado</option>
+                          </select>
+                        </div>
+                      </div>
+                      <button type="submit" className="rounded-lg bg-navy-900 px-4 py-2 text-xs font-medium text-white hover:bg-navy-800">
+                        Crear partido
+                      </button>
                     </form>
                   )}
 

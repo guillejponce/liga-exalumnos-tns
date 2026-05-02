@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-const PATHS_TO_REVALIDATE = ['/admin/partidos', '/admin/temporadas', '/goleadores', '/']
+const PATHS_TO_REVALIDATE = ['/admin/partidos', '/admin/temporadas', '/goleadores', '/peloteros', '/']
 
 function revalidateAll() {
   PATHS_TO_REVALIDATE.forEach((p) => revalidatePath(p))

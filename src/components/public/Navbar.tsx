@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: '/fixture', label: 'Fixture' },
   { href: '/goleadores', label: 'Goleadores' },
   { href: '/equipos', label: 'Equipos' },
+  { href: '/historico', label: 'Histórico' },
 ] as const
 
 export default function Navbar() {

@@ -1,10 +1,15 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getLeague, getActiveSeasonForLeague } from '@/lib/league'
 import MatchesManager from './MatchesManager'
+import SeasonPicker from './SeasonPicker'
 
 export const metadata = { title: 'Partidos' }
 
-export default async function PartidosAdminPage() {
+export default async function PartidosAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ seasonId?: string }>
+}) {
   const league = await getLeague()
 
   if (!league) {
@@ -15,32 +20,44 @@ export default async function PartidosAdminPage() {
     )
   }
 
-  const activeSeason = await getActiveSeasonForLeague(league.id)
+  const supabase = createAdminClient()
 
-  if (!activeSeason) {
+  const { data: allSeasons } = await supabase
+    .from('seasons')
+    .select('id, name, year, semester, is_active')
+    .eq('league_id', league.id)
+    .order('year', { ascending: false })
+    .order('semester', { ascending: false })
+
+  const seasons = allSeasons ?? []
+
+  if (seasons.length === 0) {
     return (
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Partidos</h1>
         <div className="mt-8 flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-16 text-center">
-          <p className="text-gray-500">No hay una temporada activa.</p>
-          <p className="mt-1 text-sm text-gray-400">Activa una temporada en la sección Temporadas para gestionar partidos.</p>
+          <p className="text-gray-500">No hay temporadas registradas.</p>
+          <p className="mt-1 text-sm text-gray-400">Crea una temporada en la sección Temporadas para gestionar partidos.</p>
         </div>
       </div>
     )
   }
 
-  const supabase = createAdminClient()
+  const params = await searchParams
+  const activeSeason = await getActiveSeasonForLeague(league.id)
+  const selectedId = params.seasonId ?? activeSeason?.id ?? seasons[0].id
+  const currentSeason = seasons.find((s) => s.id === selectedId) ?? seasons[0]
 
   const [competitionsRes, { data: teamSeasons }] = await Promise.all([
     supabase
       .from('competitions')
       .select('*, stages(*)')
-      .eq('season_id', activeSeason.id)
+      .eq('season_id', currentSeason.id)
       .order('created_at'),
     supabase
       .from('team_season')
       .select('*, team:teams(*)')
-      .eq('season_id', activeSeason.id),
+      .eq('season_id', currentSeason.id),
   ])
 
   const competitions = competitionsRes.data ?? []
@@ -50,7 +67,6 @@ export default async function PartidosAdminPage() {
     (c.stages ?? []).map((s: { id: string }) => s.id)
   )
 
-  // Try to fetch stage_groups separately
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let stageGroupsMap: Record<string, any[]> = {}
   if (stageIds.length > 0) {
@@ -68,7 +84,6 @@ export default async function PartidosAdminPage() {
     }
   }
 
-  // Merge stage_groups into stages
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const competitionsWithGroups = competitions.map((c: any) => ({
     ...c,
@@ -100,12 +115,10 @@ export default async function PartidosAdminPage() {
     <div>
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Partidos</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Temporada activa: <span className="font-medium">{activeSeason.name}</span>
-        </p>
+        <SeasonPicker seasons={seasons} currentSeasonId={currentSeason.id} />
       </div>
       <MatchesManager
-        seasonId={activeSeason.id}
+        seasonId={currentSeason.id}
         competitions={competitionsWithGroups}
         teamSeasons={teamSeasons ?? []}
         matches={matches}

@@ -34,16 +34,30 @@ export default async function HomePage() {
   let goalCount = 0
 
   if (league) {
-    const [{ count: tc }, { count: pc }] = await Promise.all([
-      supabase.from('teams').select('*', { count: 'exact', head: true }).eq('league_id', league.id),
-      supabase.from('players').select('*', { count: 'exact', head: true }).eq('league_id', league.id),
-    ])
-    teamCount = tc ?? 0
-    playerCount = pc ?? 0
-
     const activeSeason = await getActiveSeasonForLeague(league.id)
 
     if (activeSeason) {
+      // Count teams & players in this season
+      const { count: tc } = await supabase
+        .from('team_season')
+        .select('*', { count: 'exact', head: true })
+        .eq('season_id', activeSeason.id)
+      teamCount = tc ?? 0
+
+      const { data: seasonTeamIds } = await supabase
+        .from('team_season')
+        .select('team_id')
+        .eq('season_id', activeSeason.id)
+
+      if (seasonTeamIds && seasonTeamIds.length > 0) {
+        const teamIds = seasonTeamIds.map((t) => t.team_id)
+        const { count: pc } = await supabase
+          .from('team_players')
+          .select('*', { count: 'exact', head: true })
+          .in('team_id', teamIds)
+        playerCount = pc ?? 0
+      }
+
       const { data: stages } = await supabase
         .from('stages')
         .select('id, competitions!inner(season_id)')

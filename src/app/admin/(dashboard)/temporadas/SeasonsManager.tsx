@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createSeason, setActiveSeason, deleteSeason, registerTeamToSeason, removeTeamFromSeason } from '@/actions/seasons'
 import { createCompetition, createStage, deleteCompetition, deleteStage } from '@/actions/matches'
+import { createAward, deleteAward } from '@/actions/awards'
 import StageEditor from '@/components/admin/StageEditor'
 
 // ─── Types ───
@@ -37,6 +38,15 @@ interface TeamSeasonRow {
   team: { id: string; name: string; short_name: string }
 }
 
+interface AwardRow {
+  id: string
+  season_id: string
+  award_type: string
+  team_id: string | null
+  player_id: string | null
+  notes: string | null
+}
+
 interface SeasonRow {
   id: string
   name: string
@@ -45,12 +55,20 @@ interface SeasonRow {
   is_active: boolean
   team_seasons: TeamSeasonRow[]
   competitions: CompetitionRow[]
+  awards: AwardRow[]
 }
 
 interface TeamOption {
   id: string
   name: string
   short_name: string
+}
+
+interface PlayerOption {
+  id: string
+  first_name: string
+  last_name: string | null
+  nickname: string | null
 }
 
 interface MatchRow {
@@ -68,7 +86,7 @@ interface MatchRow {
   away_team_season: TeamSeasonRow
 }
 
-type TabKey = 'equipos' | 'estructura'
+type TabKey = 'equipos' | 'estructura' | 'premios'
 
 const STAGE_TYPE_LABELS: Record<string, string> = {
   league_table: 'Liga (todos vs todos)',
@@ -81,11 +99,13 @@ const STAGE_TYPE_LABELS: Record<string, string> = {
 export default function SeasonsManager({
   seasons,
   teams,
+  players,
   leagueId,
   allMatches,
 }: {
   seasons: SeasonRow[]
   teams: TeamOption[]
+  players: PlayerOption[]
   leagueId: string
   allMatches: MatchRow[]
 }) {
@@ -255,10 +275,16 @@ export default function SeasonsManager({
                     >
                       Competencias y Etapas
                     </button>
+                    <button
+                      onClick={() => setActiveTab('premios')}
+                      className={`px-4 py-2.5 text-sm font-medium transition-colors ${activeTab === 'premios' ? 'border-b-2 border-league-green text-league-green' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                      Premios
+                    </button>
                   </div>
 
                   <div className="px-4 py-4">
-                    {activeTab === 'equipos' ? (
+                    {activeTab === 'equipos' && (
                       <TeamsTab
                         teamSeasons={season.team_seasons}
                         availableTeams={availableTeams}
@@ -266,13 +292,23 @@ export default function SeasonsManager({
                         onRegister={handleRegisterTeam}
                         onRemove={handleRemoveTeam}
                       />
-                    ) : (
+                    )}
+                    {activeTab === 'estructura' && (
                       <CompetitionsTab
                         competitions={season.competitions}
                         seasonId={season.id}
                         onError={setError}
                         onEditStage={(stage) => setEditingStage({ seasonId: season.id, stage })}
                         allMatches={allMatches}
+                      />
+                    )}
+                    {activeTab === 'premios' && (
+                      <AwardsTab
+                        awards={season.awards}
+                        seasonId={season.id}
+                        teams={teams}
+                        players={players}
+                        onError={setError}
                       />
                     )}
                   </div>
@@ -504,6 +540,158 @@ function CompetitionsTab({
           )
         })}
       </div>
+    </div>
+  )
+}
+
+// ─── Awards Tab ───
+
+const AWARD_TYPES = [
+  { value: 'champion_gold', label: 'Campeón Oro', target: 'team' },
+  { value: 'runner_up_gold', label: 'Subcampeón Oro', target: 'team' },
+  { value: 'champion_silver', label: 'Campeón Plata', target: 'team' },
+  { value: 'runner_up_silver', label: 'Subcampeón Plata', target: 'team' },
+  { value: 'top_scorer', label: 'Goleador', target: 'player' },
+  { value: 'best_goalkeeper', label: 'Mejor Arquero', target: 'player' },
+  { value: 'mvp', label: 'MVP', target: 'player' },
+  { value: 'fair_play', label: 'Fair Play', target: 'team' },
+] as const
+
+const AWARD_LABELS: Record<string, string> = Object.fromEntries(AWARD_TYPES.map((a) => [a.value, a.label]))
+const AWARD_TARGET: Record<string, string> = Object.fromEntries(AWARD_TYPES.map((a) => [a.value, a.target]))
+
+function AwardsTab({
+  awards,
+  seasonId,
+  teams,
+  players,
+  onError,
+}: {
+  awards: AwardRow[]
+  seasonId: string
+  teams: TeamOption[]
+  players: PlayerOption[]
+  onError: (msg: string) => void
+}) {
+  const [showForm, setShowForm] = useState(false)
+  const [selectedType, setSelectedType] = useState('champion')
+
+  const target = AWARD_TARGET[selectedType] ?? 'team'
+
+  async function handleCreate(formData: FormData) {
+    const result = await createAward(formData)
+    if (result.error) { onError(result.error); return }
+    setShowForm(false)
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('¿Eliminar este premio?')) return
+    const result = await deleteAward(id)
+    if (result.error) onError(result.error)
+  }
+
+  function playerLabel(p: PlayerOption) {
+    if (p.nickname) return `${p.first_name} "${p.nickname}" ${p.last_name ?? ''}`.trim()
+    return `${p.first_name} ${p.last_name ?? ''}`.trim()
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-gray-700">
+          {awards.length === 0 ? 'Sin premios registrados' : `${awards.length} premio(s)`}
+        </p>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="rounded-lg bg-league-green px-3 py-1.5 text-xs font-medium text-white hover:bg-league-green-dark"
+        >
+          {showForm ? 'Cancelar' : '+ Premio'}
+        </button>
+      </div>
+
+      {showForm && (
+        <form action={handleCreate} className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <input type="hidden" name="season_id" value={seasonId} />
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-[140px]">
+              <label className="block text-xs font-medium text-gray-600">Tipo de premio</label>
+              <select
+                name="award_type"
+                required
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+              >
+                {AWARD_TYPES.map((a) => (
+                  <option key={a.value} value={a.value}>{a.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {target === 'team' && (
+              <div className="min-w-[160px] flex-1">
+                <label className="block text-xs font-medium text-gray-600">Equipo</label>
+                <select name="team_id" required className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm">
+                  <option value="">Seleccionar...</option>
+                  {teams.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {target === 'player' && (
+              <div className="min-w-[160px] flex-1">
+                <label className="block text-xs font-medium text-gray-600">Jugador</label>
+                <select name="player_id" required className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm">
+                  <option value="">Seleccionar...</option>
+                  {players.map((p) => (
+                    <option key={p.id} value={p.id}>{playerLabel(p)}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="min-w-[120px] flex-1">
+              <label className="block text-xs font-medium text-gray-600">Notas (opcional)</label>
+              <input name="notes" placeholder="Ej: 15 goles" className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm" />
+            </div>
+
+            <button type="submit" className="rounded-lg bg-navy-900 px-4 py-1.5 text-xs font-medium text-white hover:bg-navy-800">
+              Guardar
+            </button>
+          </div>
+        </form>
+      )}
+
+      {awards.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {awards.map((award) => {
+            const teamName = teams.find((t) => t.id === award.team_id)?.name
+            const player = players.find((p) => p.id === award.player_id)
+            const label = AWARD_LABELS[award.award_type] ?? award.award_type
+
+            return (
+              <div key={award.id} className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-2.5">
+                <div className="flex items-center gap-3">
+                  <span className="rounded bg-navy-100 px-2 py-0.5 text-[11px] font-semibold text-navy-700">
+                    {label}
+                  </span>
+                  <span className="text-sm text-gray-900">
+                    {teamName ?? (player ? playerLabel(player) : '—')}
+                  </span>
+                  {award.notes && (
+                    <span className="text-xs text-gray-400">({award.notes})</span>
+                  )}
+                </div>
+                <button onClick={() => handleDelete(award.id)} className="text-xs text-red-500 hover:underline">
+                  Eliminar
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

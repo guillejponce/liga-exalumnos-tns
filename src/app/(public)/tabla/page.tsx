@@ -1,6 +1,12 @@
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getLeague, getActiveSeasonForLeague } from '@/lib/league'
+import TablaFilters from '@/components/public/TablaFilters'
+
+export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = { title: 'Tabla de posiciones' }
+
 interface StandingRow {
   team: { id: string; name: string; short_name: string; crest_path: string | null }
   played: number
@@ -12,18 +18,14 @@ interface StandingRow {
   goal_difference: number
   points: number
 }
-import TeamCrest from '@/components/public/TeamCrest'
-
-export const dynamic = 'force-dynamic'
-
-export const metadata: Metadata = { title: 'Tabla de posiciones' }
-
-const TABLE_HEADERS = ['#', 'Equipo', 'PJ', 'G', 'E', 'P', 'GF', 'GC', 'DG', 'Pts'] as const
 
 interface StageSection {
-  stageName: string
+  competitionId: string
   competitionName: string
+  stageId: string
+  stageName: string
   type: string
+  groupId?: string
   groupName?: string
   standings: StandingRow[]
 }
@@ -46,12 +48,11 @@ export default async function TablaPage() {
       const teamSeasons = normalizeTeamSeasons(teamSeasonsRaw ?? [])
       const tsMap = new Map(teamSeasons.map((ts) => [ts.id, ts]))
 
-      // Fetch all stages with their competition
       const { data: stagesRaw } = await supabase
         .from('stages')
         .select('id, name, type, stage_order, competition:competitions!inner(id, name, season_id)')
         .eq('competition.season_id', activeSeason.id)
-        .order('stage_order')
+        .order('stage_order', { ascending: false })
 
       if (stagesRaw && stagesRaw.length > 0) {
         const stageIds = stagesRaw.map((s) => s.id)
@@ -62,7 +63,6 @@ export default async function TablaPage() {
           .in('stage_id', stageIds)
           .eq('status', 'played')
 
-        // 1) Fetch stage_groups
         const stageGroupsMap: Record<string, { id: string; name: string }[]> = {}
         const groupStageIds = stagesRaw.filter((s) => s.type === 'groups').map((s) => s.id)
         if (groupStageIds.length > 0) {
@@ -80,7 +80,6 @@ export default async function TablaPage() {
           }
         }
 
-        // 2) Fetch stage_group_teams separately
         const groupTeamMap: Record<string, string[]> = {}
         const allGroupIds = Object.values(stageGroupsMap).flat().map((g) => g.id)
         if (allGroupIds.length > 0) {
@@ -104,11 +103,11 @@ export default async function TablaPage() {
         for (const stage of stagesRaw) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const comp = stage.competition as any
+          const compId = comp?.id ?? ''
           const compName = comp?.name ?? ''
           const stageMatches = matches.filter((m) => m.stage_id === stage.id)
 
           if (stage.type === 'league_table') {
-            // All teams in the stage (by match participation or all season teams)
             const participatingIds = new Set<string>()
             stageMatches.forEach((m) => { participatingIds.add(m.home_team_season_id); participatingIds.add(m.away_team_season_id) })
             const stageTeams = participatingIds.size > 0
@@ -116,8 +115,10 @@ export default async function TablaPage() {
               : teamSeasons
 
             sections.push({
-              stageName: stage.name,
+              competitionId: compId,
               competitionName: compName,
+              stageId: stage.id,
+              stageName: stage.name,
               type: 'league_table',
               standings: calculateStandings(stageTeams, stageMatches),
             })
@@ -129,7 +130,6 @@ export default async function TablaPage() {
                 const groupTeams = groupTsIds.map((id) => tsMap.get(id)).filter(Boolean) as TeamSeasonData[]
                 const groupMatches = stageMatches.filter((m) => m.group_id === group.id)
 
-                // Equipos del grupo: asignaciones en stage_group_teams o participantes de partidos
                 let teamsForStandings = groupTeams
                 if (teamsForStandings.length === 0) {
                   const ids = new Set<string>()
@@ -138,15 +138,17 @@ export default async function TablaPage() {
                 }
 
                 sections.push({
-                  stageName: stage.name,
+                  competitionId: compId,
                   competitionName: compName,
+                  stageId: stage.id,
+                  stageName: stage.name,
                   type: 'groups',
+                  groupId: group.id,
                   groupName: group.name,
                   standings: calculateStandings(teamsForStandings, groupMatches),
                 })
               }
             } else {
-              // No groups defined yet, show all participants
               const participatingIds = new Set<string>()
               stageMatches.forEach((m) => { participatingIds.add(m.home_team_season_id); participatingIds.add(m.away_team_season_id) })
               const stageTeams = participatingIds.size > 0
@@ -154,14 +156,15 @@ export default async function TablaPage() {
                 : teamSeasons
 
               sections.push({
-                stageName: stage.name,
+                competitionId: compId,
                 competitionName: compName,
+                stageId: stage.id,
+                stageName: stage.name,
                 type: 'groups',
                 standings: calculateStandings(stageTeams, stageMatches),
               })
             }
           }
-          // knockout stages don't show standings
         }
       }
     }
@@ -174,68 +177,13 @@ export default async function TablaPage() {
         <p className="mt-1 text-sm text-navy-400">Temporada activa</p>
       </div>
 
-      {sections.length === 0 && (
+      {sections.length === 0 ? (
         <div className="mt-8 rounded-xl border border-navy-800 bg-navy-900 px-4 py-16 text-center text-sm text-navy-500">
           No hay datos para mostrar aún
         </div>
+      ) : (
+        <TablaFilters sections={sections} />
       )}
-
-      <div className="mt-8 space-y-10">
-        {sections.map((section, idx) => (
-          <div key={idx}>
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold text-white">
-                {section.groupName ?? section.stageName}
-              </h2>
-              {section.competitionName && (
-                <p className="text-xs text-navy-400">{section.competitionName} — {section.stageName}</p>
-              )}
-            </div>
-
-            <div className="overflow-x-auto rounded-xl border border-navy-800">
-              <table className="w-full min-w-[600px]">
-                <thead>
-                  <tr className="bg-navy-900">
-                    {TABLE_HEADERS.map((header) => (
-                      <th key={header} className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-navy-400 ${header === 'Equipo' ? 'text-left' : 'text-center'}`}>
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-navy-800">
-                  {section.standings.length === 0 && (
-                    <tr>
-                      <td colSpan={10} className="bg-navy-900/50 px-4 py-8 text-center text-sm text-navy-500">
-                        Sin partidos jugados
-                      </td>
-                    </tr>
-                  )}
-                  {section.standings.map((row, index) => (
-                    <tr key={row.team.id} className="bg-navy-900/50 transition-colors hover:bg-navy-800/50">
-                      <td className="px-4 py-3 text-center text-sm font-bold text-navy-300">{index + 1}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <TeamCrest crestPath={row.team.crest_path} name={row.team.short_name} size={64} />
-                          <span className="text-sm font-medium text-white">{row.team.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-center text-sm text-navy-300">{row.played}</td>
-                      <td className="px-4 py-3 text-center text-sm text-navy-300">{row.won}</td>
-                      <td className="px-4 py-3 text-center text-sm text-navy-300">{row.drawn}</td>
-                      <td className="px-4 py-3 text-center text-sm text-navy-300">{row.lost}</td>
-                      <td className="px-4 py-3 text-center text-sm text-navy-300">{row.goals_for}</td>
-                      <td className="px-4 py-3 text-center text-sm text-navy-300">{row.goals_against}</td>
-                      <td className="px-4 py-3 text-center text-sm text-navy-300">{row.goal_difference > 0 ? '+' : ''}{row.goal_difference}</td>
-                      <td className="px-4 py-3 text-center text-sm font-bold text-league-green">{row.points}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   )
 }

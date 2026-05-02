@@ -88,11 +88,33 @@ export default async function TemporadasAdminPage() {
     allMatches = data ?? []
   }
 
+  // Fetch season_awards and players
+  const seasonIds = seasons.map((s: { id: string }) => s.id)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let allAwards: any[] = []
+  if (seasonIds.length > 0) {
+    const { data } = await supabase
+      .from('season_awards')
+      .select('*')
+      .in('season_id', seasonIds)
+      .order('created_at')
+    allAwards = data ?? []
+  }
+
+  const { data: playersRaw } = await supabase
+    .from('players')
+    .select('id, first_name, last_name, nickname')
+    .eq('league_id', league.id)
+    .order('first_name')
+  const players = playersRaw ?? []
+
   // Merge everything
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const seasonsWithComps = seasons.map((s: any) => ({
     ...s,
     team_seasons: s.team_season ?? [],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    awards: allAwards.filter((a: any) => a.season_id === s.id),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     competitions: allCompetitions.filter((c: any) => c.season_id === s.id).map((c: any) => ({
       ...c,
@@ -113,6 +135,7 @@ export default async function TemporadasAdminPage() {
       <SeasonsManager
         seasons={seasonsWithComps}
         teams={teams}
+        players={players}
         leagueId={league.id}
         allMatches={allMatches}
       />

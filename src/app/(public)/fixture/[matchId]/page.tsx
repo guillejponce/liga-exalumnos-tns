@@ -39,15 +39,34 @@ export default async function FixtureMatchPage({ params }: { params: { matchId: 
 
   const supabase = await createClient()
 
-  const { data: matchRaw } = await supabase
-    .from('matches')
-    .select(`
-      id, status, home_score, away_score, kickoff_at,
-      home_team_season:team_season!matches_home_team_season_id_fkey(id, team:teams(name, short_name, crest_path)),
-      away_team_season:team_season!matches_away_team_season_id_fkey(id, team:teams(name, short_name, crest_path))
-    `)
-    .eq('id', matchId)
-    .single()
+  // Try with mvp_player_id; fall back without it
+  let matchRaw: Record<string, unknown> | null = null
+  {
+    const { data, error } = await supabase
+      .from('matches')
+      .select(`
+        id, status, home_score, away_score, kickoff_at, mvp_player_id,
+        home_team_season:team_season!matches_home_team_season_id_fkey(id, team:teams(name, short_name, crest_path)),
+        away_team_season:team_season!matches_away_team_season_id_fkey(id, team:teams(name, short_name, crest_path))
+      `)
+      .eq('id', matchId)
+      .single()
+
+    if (!error) {
+      matchRaw = data as Record<string, unknown>
+    } else {
+      const fb = await supabase
+        .from('matches')
+        .select(`
+          id, status, home_score, away_score, kickoff_at,
+          home_team_season:team_season!matches_home_team_season_id_fkey(id, team:teams(name, short_name, crest_path)),
+          away_team_season:team_season!matches_away_team_season_id_fkey(id, team:teams(name, short_name, crest_path))
+        `)
+        .eq('id', matchId)
+        .single()
+      matchRaw = fb.data as Record<string, unknown> | null
+    }
+  }
 
   const homeTeamSeasonId: string | null = (() => {
     const idVal = (matchRaw as unknown as { home_team_season?: { id?: unknown } | null } | null)?.home_team_season?.id
@@ -69,6 +88,22 @@ export default async function FixtureMatchPage({ params }: { params: { matchId: 
     return extractTeamInfo(at)
   })()
 
+  // Resolve MVP
+  const mvpPlayerId = (matchRaw as Record<string, unknown>).mvp_player_id as string | null
+  let mvpName: string | null = null
+  if (mvpPlayerId) {
+    const { data: mvpPlayer } = await supabase
+      .from('players')
+      .select('first_name, last_name, nickname')
+      .eq('id', mvpPlayerId)
+      .single()
+    if (mvpPlayer) {
+      mvpName = mvpPlayer.nickname
+        ? `${mvpPlayer.first_name} "${mvpPlayer.nickname}"`
+        : `${mvpPlayer.first_name} ${mvpPlayer.last_name ?? ''}`.trim()
+    }
+  }
+
   const eventsRes = await getMatchEvents(matchId)
   const goalEvents = (eventsRes.data ?? []).filter((e) => e.type === 'goal')
 
@@ -77,7 +112,7 @@ export default async function FixtureMatchPage({ params }: { params: { matchId: 
 
   const isPlayed = matchRaw?.status === 'played'
   const kickoffDate = matchRaw?.kickoff_at
-    ? new Date(matchRaw.kickoff_at).toLocaleDateString('es-CL', {
+    ? new Date(matchRaw.kickoff_at as string).toLocaleDateString('es-CL', {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
@@ -134,11 +169,11 @@ export default async function FixtureMatchPage({ params }: { params: { matchId: 
             {/* Score */}
             <div className="flex shrink-0 items-center gap-3 rounded-2xl border border-navy-700/50 bg-navy-900/80 px-6 py-4 backdrop-blur-sm sm:px-8">
               <span className="text-3xl font-extrabold tabular-nums text-white sm:text-4xl">
-                {matchRaw?.home_score ?? '-'}
+                {(matchRaw?.home_score as number | null) ?? '-'}
               </span>
               <span className="text-navy-500">–</span>
               <span className="text-3xl font-extrabold tabular-nums text-white sm:text-4xl">
-                {matchRaw?.away_score ?? '-'}
+                {(matchRaw?.away_score as number | null) ?? '-'}
               </span>
             </div>
 
@@ -162,6 +197,14 @@ export default async function FixtureMatchPage({ params }: { params: { matchId: 
 
           {!isPlayed && (
             <p className="mt-4 text-center text-sm font-medium text-league-green">Partido programado</p>
+          )}
+
+          {mvpName && (
+            <div className="mt-4 flex justify-center">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 px-4 py-1.5 text-sm font-medium text-amber-400">
+                <span className="text-base">🏅</span> MVP: {mvpName}
+              </span>
+            </div>
           )}
         </div>
       </div>

@@ -51,8 +51,10 @@ CREATE TABLE public.matches (
   away_score integer,
   status USER-DEFINED NOT NULL DEFAULT 'scheduled'::match_status,
   venue text,
+  mvp_player_id uuid,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT matches_pkey PRIMARY KEY (id),
+  CONSTRAINT matches_mvp_player_id_fkey FOREIGN KEY (mvp_player_id) REFERENCES public.players(id),
   CONSTRAINT matches_stage_id_fkey FOREIGN KEY (stage_id) REFERENCES public.stages(id),
   CONSTRAINT matches_group_id_fkey FOREIGN KEY (group_id) REFERENCES public.stage_groups(id),
   CONSTRAINT matches_home_team_season_id_fkey FOREIGN KEY (home_team_season_id) REFERENCES public.team_season(id),
@@ -82,6 +84,19 @@ CREATE TABLE public.players (
   rut text NOT NULL,
   CONSTRAINT players_pkey PRIMARY KEY (id),
   CONSTRAINT players_league_id_fkey FOREIGN KEY (league_id) REFERENCES public.leagues(id)
+);
+CREATE TABLE public.season_awards (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  season_id uuid NOT NULL,
+  award_type text NOT NULL,
+  team_id uuid,
+  player_id uuid,
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT season_awards_pkey PRIMARY KEY (id),
+  CONSTRAINT season_awards_season_id_fkey FOREIGN KEY (season_id) REFERENCES public.seasons(id) ON DELETE CASCADE,
+  CONSTRAINT season_awards_team_id_fkey FOREIGN KEY (team_id) REFERENCES public.teams(id),
+  CONSTRAINT season_awards_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.players(id)
 );
 CREATE TABLE public.seasons (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

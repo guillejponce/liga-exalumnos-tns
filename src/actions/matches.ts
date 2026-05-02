@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-const PATHS_TO_REVALIDATE = ['/admin/partidos', '/admin/temporadas', '/fixture', '/tabla', '/goleadores', '/']
+const PATHS_TO_REVALIDATE = ['/admin/partidos', '/admin/temporadas', '/fixture', '/tabla', '/goleadores', '/peloteros', '/']
 
 function revalidateAll() {
   PATHS_TO_REVALIDATE.forEach((p) => revalidatePath(p))
@@ -20,10 +20,17 @@ export async function createMatch(formData: FormData) {
   const away_team_season_id = formData.get('away_team_season_id') as string
   const round = formData.get('round') as string
   const kickoff_at = (formData.get('kickoff_at') as string) || null
+  const home_score_raw = formData.get('home_score') as string | null
+  const away_score_raw = formData.get('away_score') as string | null
+  const status_raw = (formData.get('status') as string) || null
 
   if (!stage_id || !home_team_season_id || !away_team_season_id) {
     return { error: 'Etapa y equipos son requeridos' }
   }
+
+  const hasScore = home_score_raw !== null && home_score_raw !== '' &&
+                   away_score_raw !== null && away_score_raw !== ''
+  const status = status_raw === 'played' ? 'played' : 'scheduled'
 
   const { error } = await supabase.from('matches').insert({
     stage_id,
@@ -32,7 +39,11 @@ export async function createMatch(formData: FormData) {
     away_team_season_id,
     round: round ? parseInt(round) : null,
     kickoff_at: kickoff_at || null,
-    status: 'scheduled' as const,
+    status: hasScore && status === 'played' ? 'played' as const : 'scheduled' as const,
+    ...(hasScore ? {
+      home_score: parseInt(home_score_raw!),
+      away_score: parseInt(away_score_raw!),
+    } : {}),
   })
 
   if (error) return { error: error.message }
@@ -57,6 +68,22 @@ export async function updateMatchScore(formData: FormData) {
     .from('matches')
     .update({ home_score, away_score, status })
     .eq('id', id)
+
+  if (error) return { error: error.message }
+
+  revalidateAll()
+  return { success: true }
+}
+
+export async function updateMatchMvp(matchId: string, mvpPlayerId: string | null) {
+  const supabase = createAdminClient()
+
+  if (!matchId) return { error: 'Match ID requerido' }
+
+  const { error } = await supabase
+    .from('matches')
+    .update({ mvp_player_id: mvpPlayerId })
+    .eq('id', matchId)
 
   if (error) return { error: error.message }
 
