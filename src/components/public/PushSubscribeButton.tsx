@@ -3,9 +3,19 @@
 import { useState, useEffect } from 'react'
 import { subscribePush, unsubscribePush } from '@/actions/push'
 
-type PushState = 'loading' | 'unsupported' | 'denied' | 'idle' | 'subscribed'
+type PushState = 'loading' | 'unsupported' | 'denied' | 'idle' | 'picking' | 'subscribed'
 
 const LS_KEY = 'push_subscribed'
+const LS_TEAM_KEY = 'push_team'
+
+export interface TeamOption {
+  id: string
+  name: string
+}
+
+interface Props {
+  teams?: TeamOption[]
+}
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
@@ -18,9 +28,11 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray
 }
 
-export default function PushSubscribeButton() {
+export default function PushSubscribeButton({ teams = [] }: Props) {
   const [state, setState] = useState<PushState>('loading')
   const [busy, setBusy] = useState(false)
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
+  const [savedTeamName, setSavedTeamName] = useState<string | null>(null)
 
   useEffect(() => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
@@ -34,10 +46,18 @@ export default function PushSubscribeButton() {
     }
 
     const saved = localStorage.getItem(LS_KEY)
-    setState(saved === 'true' ? 'subscribed' : 'idle')
-  }, [])
+    if (saved === 'true') {
+      const teamId = localStorage.getItem(LS_TEAM_KEY)
+      setSelectedTeamId(teamId)
+      const team = teams.find((t) => t.id === teamId)
+      setSavedTeamName(team?.name ?? null)
+      setState('subscribed')
+    } else {
+      setState('idle')
+    }
+  }, [teams])
 
-  async function handleSubscribe() {
+  async function doSubscribe(teamId: string | null) {
     setBusy(true)
     try {
       const permission = await Notification.requestPermission()
@@ -68,14 +88,32 @@ export default function PushSubscribeButton() {
           p256dh: sub.keys!.p256dh!,
           auth: sub.keys!.auth!,
         },
+        teamId,
       })
 
       localStorage.setItem(LS_KEY, 'true')
+      if (teamId) {
+        localStorage.setItem(LS_TEAM_KEY, teamId)
+        const team = teams.find((t) => t.id === teamId)
+        setSavedTeamName(team?.name ?? null)
+      } else {
+        localStorage.removeItem(LS_TEAM_KEY)
+        setSavedTeamName(null)
+      }
+      setSelectedTeamId(teamId)
       setState('subscribed')
     } catch {
       // Silent fail
     }
     setBusy(false)
+  }
+
+  function handleActivate() {
+    if (teams.length > 0) {
+      setState('picking')
+    } else {
+      doSubscribe(null)
+    }
   }
 
   async function handleUnsubscribe() {
@@ -88,6 +126,9 @@ export default function PushSubscribeButton() {
         await subscription.unsubscribe()
       }
       localStorage.removeItem(LS_KEY)
+      localStorage.removeItem(LS_TEAM_KEY)
+      setSelectedTeamId(null)
+      setSavedTeamName(null)
       setState('idle')
     } catch {
       // Silent fail
@@ -95,7 +136,16 @@ export default function PushSubscribeButton() {
     setBusy(false)
   }
 
-  if (state === 'loading' || state === 'unsupported') return null
+  if (state === 'loading') return null
+
+  if (state === 'unsupported') {
+    return (
+      <div className="flex items-center gap-2 rounded-xl border border-navy-800 bg-navy-900 px-3 py-2.5 text-[11px] text-navy-500">
+        <BellOffIcon />
+        <span>Para recibir notificaciones, agrega esta web a tu pantalla de inicio</span>
+      </div>
+    )
+  }
 
   if (state === 'denied') {
     return (
@@ -106,7 +156,46 @@ export default function PushSubscribeButton() {
     )
   }
 
+  if (state === 'picking') {
+    return (
+      <div className="space-y-2 rounded-xl border border-navy-700 bg-navy-900 p-3">
+        <p className="text-center text-[11px] font-semibold text-navy-300">
+          ¿De qué equipo quieres recibir notificaciones?
+        </p>
+        <button
+          onClick={() => doSubscribe(null)}
+          disabled={busy}
+          className="w-full rounded-lg border border-navy-700 bg-navy-800 px-3 py-2 text-[11px] font-medium text-navy-300 transition-colors hover:text-white active:scale-[0.98] disabled:opacity-50"
+        >
+          {busy ? 'Activando...' : 'Todos los equipos'}
+        </button>
+        <div className="grid grid-cols-2 gap-1.5">
+          {teams.map((team) => (
+            <button
+              key={team.id}
+              onClick={() => doSubscribe(team.id)}
+              disabled={busy}
+              className="rounded-lg border border-navy-700 bg-navy-800 px-2 py-2 text-[11px] font-medium text-navy-300 transition-colors hover:text-white active:scale-[0.98] disabled:opacity-50"
+            >
+              {team.name}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => setState('idle')}
+          className="w-full text-center text-[10px] text-navy-500 hover:text-navy-300"
+        >
+          Cancelar
+        </button>
+      </div>
+    )
+  }
+
   if (state === 'subscribed') {
+    const label = savedTeamName
+      ? `Notificaciones: ${savedTeamName}`
+      : 'Notificaciones: todos los equipos'
+
     return (
       <button
         onClick={handleUnsubscribe}
@@ -114,14 +203,14 @@ export default function PushSubscribeButton() {
         className="flex w-full items-center justify-center gap-2 rounded-xl border border-league-green/30 bg-league-green/10 px-3 py-2.5 text-[11px] font-semibold text-league-green transition-colors active:scale-[0.98] disabled:opacity-50"
       >
         <BellActiveIcon />
-        <span>{busy ? 'Desactivando...' : 'Notificaciones activas'}</span>
+        <span>{busy ? 'Desactivando...' : label}</span>
       </button>
     )
   }
 
   return (
     <button
-      onClick={handleSubscribe}
+      onClick={handleActivate}
       disabled={busy}
       className="flex w-full items-center justify-center gap-2 rounded-xl border border-navy-700 bg-navy-800 px-3 py-2.5 text-[11px] font-semibold text-navy-300 transition-colors hover:text-white active:scale-[0.98] disabled:opacity-50"
     >

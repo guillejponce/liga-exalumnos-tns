@@ -16,6 +16,7 @@ function getVapidConfig() {
 export async function subscribePush(subscription: {
   endpoint: string
   keys: { p256dh: string; auth: string }
+  teamId?: string | null
 }) {
   const supabase = createAdminClient()
 
@@ -24,6 +25,7 @@ export async function subscribePush(subscription: {
       endpoint: subscription.endpoint,
       keys_p256dh: subscription.keys.p256dh,
       keys_auth: subscription.keys.auth,
+      team_id: subscription.teamId || null,
     },
     { onConflict: 'endpoint' }
   )
@@ -51,24 +53,31 @@ interface PushPayload {
   tag?: string
 }
 
-export async function sendPushToAll(payload: PushPayload) {
+export async function sendPushForMatch(payload: PushPayload, teamIds: string[]) {
   const vapid = getVapidConfig()
   if (!vapid) return
 
   webpush.setVapidDetails(vapid.email, vapid.publicKey, vapid.privateKey)
 
   const supabase = createAdminClient()
+
   const { data: subs } = await supabase
     .from('push_subscriptions')
-    .select('id, endpoint, keys_p256dh, keys_auth')
+    .select('id, endpoint, keys_p256dh, keys_auth, team_id')
 
   if (!subs || subs.length === 0) return
+
+  const relevantSubs = subs.filter(
+    (sub) => !sub.team_id || teamIds.includes(sub.team_id)
+  )
+
+  if (relevantSubs.length === 0) return
 
   const body = JSON.stringify(payload)
   const expiredIds: string[] = []
 
   await Promise.allSettled(
-    subs.map(async (sub) => {
+    relevantSubs.map(async (sub) => {
       try {
         await webpush.sendNotification(
           {

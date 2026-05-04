@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendPushToAll } from '@/actions/push'
+import { sendPushForMatch } from '@/actions/push'
 
 interface MatchContext {
   id: string
@@ -7,6 +7,7 @@ interface MatchContext {
   awayTeam: string
   homeScore: number
   awayScore: number
+  teamIds: string[]
 }
 
 export async function getMatchContext(matchId: string): Promise<MatchContext | null> {
@@ -16,8 +17,8 @@ export async function getMatchContext(matchId: string): Promise<MatchContext | n
     .from('matches')
     .select(`
       id, home_score, away_score,
-      home_team_season:team_season!matches_home_team_season_id_fkey(team:teams(name)),
-      away_team_season:team_season!matches_away_team_season_id_fkey(team:teams(name))
+      home_team_season:team_season!matches_home_team_season_id_fkey(team_id, team:teams(name)),
+      away_team_season:team_season!matches_away_team_season_id_fkey(team_id, team:teams(name))
     `)
     .eq('id', matchId)
     .single()
@@ -26,8 +27,14 @@ export async function getMatchContext(matchId: string): Promise<MatchContext | n
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const raw = data as any
-  const ht = Array.isArray(raw.home_team_season?.team) ? raw.home_team_season.team[0] : raw.home_team_season?.team
-  const at = Array.isArray(raw.away_team_season?.team) ? raw.away_team_season.team[0] : raw.away_team_season?.team
+  const hts = Array.isArray(raw.home_team_season) ? raw.home_team_season[0] : raw.home_team_season
+  const ats = Array.isArray(raw.away_team_season) ? raw.away_team_season[0] : raw.away_team_season
+  const ht = Array.isArray(hts?.team) ? hts.team[0] : hts?.team
+  const at = Array.isArray(ats?.team) ? ats.team[0] : ats?.team
+
+  const teamIds: string[] = []
+  if (hts?.team_id) teamIds.push(hts.team_id)
+  if (ats?.team_id) teamIds.push(ats.team_id)
 
   return {
     id: matchId,
@@ -35,6 +42,7 @@ export async function getMatchContext(matchId: string): Promise<MatchContext | n
     awayTeam: at?.name ?? '?',
     homeScore: raw.home_score ?? 0,
     awayScore: raw.away_score ?? 0,
+    teamIds,
   }
 }
 
@@ -93,19 +101,19 @@ export async function notifyMatchEvent(
     const score = `${match.homeTeam} ${match.homeScore} - ${match.awayScore} ${match.awayTeam}`
 
     if (eventType === 'goal') {
-      await sendPushToAll({
+      await sendPushForMatch({
         title: `${ev.emoji} ${ev.label}! ${playerName}`,
         body: `${teamName} — ${score}`,
         url: `/fixture`,
         tag: `match-${matchId}-goal`,
-      })
+      }, match.teamIds)
     } else {
-      await sendPushToAll({
+      await sendPushForMatch({
         title: `${ev.emoji} ${ev.label}`,
         body: `${playerName} (${teamName}) — ${score}`,
         url: `/fixture`,
         tag: `match-${matchId}-${eventType}`,
-      })
+      }, match.teamIds)
     }
   } catch {
     // Never block the main action
@@ -114,31 +122,15 @@ export async function notifyMatchEvent(
 
 export async function notifyScoreUpdate(matchId: string, homeScore: number, awayScore: number) {
   try {
-    const supabase = createAdminClient()
-    const { data } = await supabase
-      .from('matches')
-      .select(`
-        home_team_season:team_season!matches_home_team_season_id_fkey(team:teams(name)),
-        away_team_season:team_season!matches_away_team_season_id_fkey(team:teams(name))
-      `)
-      .eq('id', matchId)
-      .single()
+    const match = await getMatchContext(matchId)
+    if (!match) return
 
-    if (!data) return
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const raw = data as any
-    const ht = Array.isArray(raw.home_team_season?.team) ? raw.home_team_season.team[0] : raw.home_team_season?.team
-    const at = Array.isArray(raw.away_team_season?.team) ? raw.away_team_season.team[0] : raw.away_team_season?.team
-    const homeTeam = ht?.name ?? '?'
-    const awayTeam = at?.name ?? '?'
-
-    await sendPushToAll({
-      title: `⚽ ${homeTeam} ${homeScore} - ${awayScore} ${awayTeam}`,
+    await sendPushForMatch({
+      title: `⚽ ${match.homeTeam} ${homeScore} - ${awayScore} ${match.awayTeam}`,
       body: 'Marcador actualizado',
       url: '/fixture',
       tag: `match-${matchId}-score`,
-    })
+    }, match.teamIds)
   } catch {
     // Never block the main action
   }
@@ -149,12 +141,12 @@ export async function notifyMatchFinalized(matchId: string) {
     const match = await getMatchContext(matchId)
     if (!match) return
 
-    await sendPushToAll({
+    await sendPushForMatch({
       title: '🏁 Partido finalizado',
       body: `${match.homeTeam} ${match.homeScore} - ${match.awayScore} ${match.awayTeam}`,
       url: `/fixture`,
       tag: `match-${matchId}-final`,
-    })
+    }, match.teamIds)
   } catch {
     // Never block the main action
   }
@@ -168,12 +160,12 @@ export async function notifyMvpSelected(matchId: string, playerId: string) {
     ])
     if (!match) return
 
-    await sendPushToAll({
+    await sendPushForMatch({
       title: '🏅 MVP del partido',
       body: `${playerName} — ${match.homeTeam} vs ${match.awayTeam}`,
       url: `/fixture`,
       tag: `match-${matchId}-mvp`,
-    })
+    }, match.teamIds)
   } catch {
     // Never block the main action
   }
