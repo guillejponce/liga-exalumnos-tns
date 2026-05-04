@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { notifyMatchEvent } from '@/lib/push-helpers'
 
 const PATHS_TO_REVALIDATE = ['/admin/partidos', '/admin/temporadas', '/goleadores', '/peloteros', '/']
 
@@ -142,6 +143,7 @@ export async function createMatchEvent(
   if (error) return { error: error.message }
 
   revalidateAll()
+  notifyMatchEvent(matchId, teamSeasonId, playerId, eventType)
   return { success: true }
 }
 

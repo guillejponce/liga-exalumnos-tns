@@ -1,4 +1,5 @@
 import Navbar from '@/components/public/Navbar'
+import PushSubscribeButton from '@/components/public/PushSubscribeButton'
 
 export default function PublicLayout({
   children,
@@ -10,8 +11,13 @@ export default function PublicLayout({
       <Navbar />
       <main className="flex-1">{children}</main>
       <footer className="border-t border-navy-800 bg-navy-900 py-8">
-        <div className="mx-auto max-w-7xl px-4 text-center text-sm text-navy-400">
-          © {new Date().getFullYear()} Liga Nico Sabag — Exalumnos Newland
+        <div className="mx-auto max-w-7xl space-y-4 px-4">
+          <div className="mx-auto max-w-sm">
+            <PushSubscribeButton />
+          </div>
+          <div className="text-center text-sm text-navy-400">
+            © {new Date().getFullYear()} Liga Nico Sabag — Exalumnos Newland
+          </div>
         </div>
       </footer>
     </div>

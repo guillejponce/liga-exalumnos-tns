@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { notifyMatchFinalized, notifyMvpSelected } from '@/lib/push-helpers'
 
 const PATHS_TO_REVALIDATE = ['/admin/partidos', '/admin/temporadas', '/fixture', '/tabla', '/goleadores', '/peloteros', '/']
 
@@ -72,6 +73,7 @@ export async function updateMatchScore(formData: FormData) {
   if (error) return { error: error.message }
 
   revalidateAll()
+  if (status === 'played') notifyMatchFinalized(id)
   return { success: true }
 }
 
@@ -88,6 +90,7 @@ export async function updateMatchMvp(matchId: string, mvpPlayerId: string | null
   if (error) return { error: error.message }
 
   revalidateAll()
+  if (mvpPlayerId) notifyMvpSelected(matchId, mvpPlayerId)
   return { success: true }
 }
 
