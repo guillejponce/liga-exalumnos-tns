@@ -145,16 +145,6 @@ export default function LiveScoring({
     setSaving(true)
     setError(null)
     const min = minute ? parseInt(minute) : null
-
-    if (eventType === 'goal') {
-      const isHome = teamSeasonId === homeTeamSeasonId
-      const newH = isHome ? hScore + 1 : hScore
-      const newA = isHome ? aScore : aScore + 1
-      setHScore(newH)
-      setAScore(newA)
-      await saveScore(newH, newA, undefined, true)
-    }
-
     const res = await createMatchEvent(matchId, teamSeasonId, playerId, eventType, min)
     if (res.error) {
       setError(res.error)
