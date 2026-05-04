@@ -260,17 +260,10 @@ function StatusButton({ label, active, onClick }: { label: string; active: boole
 }
 
 function MatchCard({ match }: { match: PMatchItem }) {
-  const isPlayed = match.status === 'played'
+  const isScheduled = match.status === 'scheduled'
 
-  return (
-    <Link
-      href={`/peloteros/live/${match.id}`}
-      className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors active:scale-[0.98] ${
-        isPlayed
-          ? 'border-navy-800 bg-navy-900/60'
-          : 'border-league-green/30 bg-navy-900'
-      }`}
-    >
+  const inner = (
+    <>
       {/* Home */}
       <div className="flex flex-1 items-center justify-end gap-1.5">
         <span className="truncate text-right text-xs font-semibold text-white">{match.homeTeam}</span>
@@ -279,7 +272,7 @@ function MatchCard({ match }: { match: PMatchItem }) {
 
       {/* Score */}
       <div className="flex w-14 items-center justify-center">
-        {isPlayed ? (
+        {!isScheduled ? (
           <span className="text-sm font-bold tabular-nums text-league-green">{match.home_score} - {match.away_score}</span>
         ) : (
           <span className="text-[10px] text-navy-500">vs</span>
@@ -294,12 +287,29 @@ function MatchCard({ match }: { match: PMatchItem }) {
 
       {/* Status */}
       <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-medium ${
-        isPlayed
-          ? 'bg-navy-800 text-navy-500'
-          : 'bg-league-green/10 text-league-green'
+        isScheduled
+          ? 'bg-league-green/10 text-league-green'
+          : 'bg-navy-800 text-navy-500'
       }`}>
-        {isPlayed ? '✓' : '●'}
+        {isScheduled ? '●' : '✓'}
       </span>
-    </Link>
+    </>
+  )
+
+  if (isScheduled) {
+    return (
+      <Link
+        href={`/peloteros/live/${match.id}`}
+        className="flex items-center gap-3 rounded-xl border border-league-green/30 bg-navy-900 px-3 py-2.5 transition-colors active:scale-[0.98]"
+      >
+        {inner}
+      </Link>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-navy-800 bg-navy-900/60 px-3 py-2.5 opacity-60">
+      {inner}
+    </div>
   )
 }

@@ -1,13 +1,21 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { isPeloterosAuthorized } from '@/actions/peloteros-auth'
+import PeloterosLogin from './PeloterosLogin'
 
 export const metadata = { title: 'Peloteros — Liga Nico Sabag' }
 
-export default function PeloterosLayout({
+export default async function PeloterosLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const authorized = await isPeloterosAuthorized()
+
+  if (!authorized) {
+    return <PeloterosLogin />
+  }
+
   return (
     <div className="min-h-screen bg-navy-950">
       <header className="sticky top-0 z-30 border-b border-navy-800 bg-navy-900">
