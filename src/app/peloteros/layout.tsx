@@ -1,22 +1,13 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 
 export const metadata = { title: 'Peloteros — Liga Nico Sabag' }
 
-export default async function PeloterosLayout({
+export default function PeloterosLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/admin/login')
-  }
-
   return (
     <div className="min-h-screen bg-navy-950">
       <header className="sticky top-0 z-30 border-b border-navy-800 bg-navy-900">
