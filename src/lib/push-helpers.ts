@@ -16,8 +16,8 @@ export async function getMatchContext(matchId: string): Promise<MatchContext | n
     .from('matches')
     .select(`
       id, home_score, away_score,
-      home_team_season:team_season!matches_home_team_season_id_fkey(team:teams(short_name)),
-      away_team_season:team_season!matches_away_team_season_id_fkey(team:teams(short_name))
+      home_team_season:team_season!matches_home_team_season_id_fkey(team:teams(name)),
+      away_team_season:team_season!matches_away_team_season_id_fkey(team:teams(name))
     `)
     .eq('id', matchId)
     .single()
@@ -31,8 +31,8 @@ export async function getMatchContext(matchId: string): Promise<MatchContext | n
 
   return {
     id: matchId,
-    homeTeam: ht?.short_name ?? '?',
-    awayTeam: at?.short_name ?? '?',
+    homeTeam: ht?.name ?? '?',
+    awayTeam: at?.name ?? '?',
     homeScore: raw.home_score ?? 0,
     awayScore: raw.away_score ?? 0,
   }
@@ -107,6 +107,38 @@ export async function notifyMatchEvent(
         tag: `match-${matchId}-${eventType}`,
       })
     }
+  } catch {
+    // Never block the main action
+  }
+}
+
+export async function notifyScoreUpdate(matchId: string, homeScore: number, awayScore: number) {
+  try {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('matches')
+      .select(`
+        home_team_season:team_season!matches_home_team_season_id_fkey(team:teams(name)),
+        away_team_season:team_season!matches_away_team_season_id_fkey(team:teams(name))
+      `)
+      .eq('id', matchId)
+      .single()
+
+    if (!data) return
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const raw = data as any
+    const ht = Array.isArray(raw.home_team_season?.team) ? raw.home_team_season.team[0] : raw.home_team_season?.team
+    const at = Array.isArray(raw.away_team_season?.team) ? raw.away_team_season.team[0] : raw.away_team_season?.team
+    const homeTeam = ht?.name ?? '?'
+    const awayTeam = at?.name ?? '?'
+
+    await sendPushToAll({
+      title: `⚽ ${homeTeam} ${homeScore} - ${awayScore} ${awayTeam}`,
+      body: 'Marcador actualizado',
+      url: '/fixture',
+      tag: `match-${matchId}-score`,
+    })
   } catch {
     // Never block the main action
   }

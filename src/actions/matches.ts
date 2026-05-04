@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { notifyMatchFinalized, notifyMvpSelected } from '@/lib/push-helpers'
+import { notifyMatchFinalized, notifyMvpSelected, notifyScoreUpdate } from '@/lib/push-helpers'
 
 const PATHS_TO_REVALIDATE = ['/admin/partidos', '/admin/temporadas', '/fixture', '/tabla', '/goleadores', '/peloteros', '/']
 
@@ -60,20 +60,31 @@ export async function updateMatchScore(formData: FormData) {
   const home_score = parseInt(formData.get('home_score') as string)
   const away_score = parseInt(formData.get('away_score') as string)
   const status = formData.get('status') as 'scheduled' | 'played'
+  const kickoff_at = (formData.get('kickoff_at') as string) || null
+  const skipPush = formData.get('skip_push') === '1'
 
   if (!id || isNaN(home_score) || isNaN(away_score)) {
     return { error: 'Datos incompletos' }
   }
 
+  const updateData: Record<string, unknown> = { home_score, away_score, status }
+  if (kickoff_at) updateData.kickoff_at = kickoff_at
+
   const { error } = await supabase
     .from('matches')
-    .update({ home_score, away_score, status })
+    .update(updateData)
     .eq('id', id)
 
   if (error) return { error: error.message }
 
   revalidateAll()
-  if (status === 'played') notifyMatchFinalized(id)
+  if (!skipPush) {
+    if (status === 'played') {
+      notifyMatchFinalized(id)
+    } else {
+      notifyScoreUpdate(id, home_score, away_score)
+    }
+  }
   return { success: true }
 }
 

@@ -1,0 +1,17 @@
+{
+  "name": "Liga Nico Sabag",
+  "short_name": "Liga NS",
+  "description": "Liga de fútbol de exalumnos Newland",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#0a0e1a",
+  "icons": [
+    {
+      "src": "/assets/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

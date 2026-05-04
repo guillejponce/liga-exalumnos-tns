@@ -19,9 +19,10 @@ export const metadata: Metadata = {
   },
   description: 'Liga de fútbol de exalumnos Newland — Temporadas, equipos, fixture y tabla de posiciones.',
   icons: {
-    icon: '/assets/Ligas Newland blanco.png',
-    apple: '/assets/Ligas Newland blanco.png',
+    icon: '/assets/logo.png',
+    apple: '/assets/logo.png',
   },
+  manifest: '/manifest.json',
 }
 
 export default function RootLayout({

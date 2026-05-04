@@ -104,7 +104,7 @@ export default function LiveScoring({
     })
   }
 
-  const saveScore = useCallback(async (h: number, a: number, newStatus?: string) => {
+  const saveScore = useCallback(async (h: number, a: number, newStatus?: string, skipPush?: boolean) => {
     setSaving(true)
     setError(null)
     const fd = new FormData()
@@ -112,6 +112,7 @@ export default function LiveScoring({
     fd.set('home_score', String(h))
     fd.set('away_score', String(a))
     fd.set('status', newStatus ?? status)
+    if (skipPush) fd.set('skip_push', '1')
     const res = await updateMatchScore(fd)
     if (res.error) setError(res.error)
     else if (newStatus) setStatus(newStatus)
@@ -148,6 +149,14 @@ export default function LiveScoring({
     if (res.error) {
       setError(res.error)
     } else {
+      if (eventType === 'goal') {
+        const isHome = teamSeasonId === homeTeamSeasonId
+        const newH = isHome ? hScore + 1 : hScore
+        const newA = isHome ? aScore : aScore + 1
+        setHScore(newH)
+        setAScore(newA)
+        saveScore(newH, newA, undefined, true)
+      }
       setSelectedPlayer('')
       setMinute('')
       router.refresh()

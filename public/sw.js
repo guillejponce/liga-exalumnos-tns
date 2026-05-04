@@ -5,8 +5,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body || '',
-    icon: '/assets/LNS negro.png',
-    badge: '/assets/LNS negro.png',
+    icon: '/assets/logo.png',
+    badge: '/assets/logo.png',
     data: { url: data.url || '/' },
     vibrate: [200, 100, 200],
     tag: data.tag || 'liga-update',
